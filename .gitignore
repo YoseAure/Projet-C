@@ -53,3 +53,8 @@ dkms.conf
 
 # Local files
 .DS_Store
+
+my_game
+/build
+
+.vscode
