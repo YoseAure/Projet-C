@@ -1,5 +1,5 @@
 # Nom de l'exécutable
-TARGET = my_game
+TARGET = PestiVentura
 
 # Dossiers
 SRC_DIR = src
