@@ -1,7 +1,5 @@
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
 #include <stdbool.h>
-#include "menu.h"
+#include "../include/menu.h"
 
 // Structure pour stocker les informations des options de menu
 typedef struct
