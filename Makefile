@@ -25,8 +25,14 @@ else
         RM := rm -rf
     endif
     ifeq ($(UNAME_S),Darwin)
-        SDL_CFLAGS := -I/usr/local/include -I$(INCLUDE_DIR)
-        SDL_LDFLAGS := -L/usr/local/lib -lSDL2 -lSDL2_ttf
+        # Configuration pour macOS
+        ifeq ($(shell test -d /opt/homebrew/opt/sdl2 && echo yes),yes)
+            SDL_CFLAGS := -I/opt/homebrew/include -I/opt/homebrew/opt/sdl2/include/SDL2 -I/opt/homebrew/opt/sdl2_ttf/include/SDL2 -I$(INCLUDE_DIR)
+            SDL_LDFLAGS := -L/opt/homebrew/lib -L/opt/homebrew/opt/sdl2/lib -L/opt/homebrew/opt/sdl2_ttf/lib -lSDL2 -lSDL2_ttf
+        else
+            SDL_CFLAGS := -I/usr/local/include/SDL2 -I$(INCLUDE_DIR)
+            SDL_LDFLAGS := -L/usr/local/lib -lSDL2 -lSDL2_ttf
+        endif
         RM := rm -rf
     endif
 endif
