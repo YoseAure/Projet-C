@@ -2,6 +2,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <stdbool.h>
 #include "../include/menu.h"
+#include "../include/game.h"
 
 int main(int argc, char *argv[]) {
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {

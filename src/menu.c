@@ -1,4 +1,5 @@
 #include "../include/menu.h"
+#include "../include/game.h"
 
 // Structure pour stocker les informations des options de menu
 typedef struct {
@@ -56,7 +57,9 @@ void display_main_menu(SDL_Renderer *renderer) {
                         selected = (selected + 1) % 3;
                         break;
                     case SDLK_RETURN:
-                        if (selected == 2) {
+                        if (selected == 0) {
+                            start_game(renderer);
+                        } else if (selected == 2) {
                             quit = true;
                         }
                         break;
