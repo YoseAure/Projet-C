@@ -21,6 +21,12 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
     int window_width, window_height;
     SDL_GetRendererOutputSize(renderer, &window_width, &window_height);
 
+    TTF_Font *title_font = TTF_OpenFont("assets/fonts/mario-font.ttf", 72); // Taille de police augmentée
+    if (!title_font) {
+        printf("Erreur TTF_OpenFont: %s\n", TTF_GetError());
+        return;
+    }
+
     while (!quit) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
@@ -50,6 +56,22 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
+        // titre
+        SDL_Surface *title_surface = TTF_RenderText_Solid(title_font, "Game Paused", white);
+        SDL_Texture *title_texture = SDL_CreateTextureFromSurface(renderer, title_surface);
+
+        int title_width = title_surface->w;
+        int title_height = title_surface->h;
+        int title_x = (window_width - title_width) / 2;
+        int title_y = (window_height / 4) - (title_height / 2);
+
+        SDL_Rect title_dest = {title_x, title_y, title_width, title_height};
+        SDL_RenderCopy(renderer, title_texture, NULL, &title_dest);
+
+        SDL_FreeSurface(title_surface);
+        SDL_DestroyTexture(title_texture);
+
+        // options
         for (int i = 0; i < 2; ++i) {
             SDL_Color color = (i == selected) ? yellow : white;
 
@@ -59,7 +81,7 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
             int text_width = surface->w;
             int text_height = surface->h;
             int x = (window_width - text_width) / 2;
-            int y = (window_height / 2) + (i * (text_height + 10));
+            int y = (window_height / 2) + (i * (text_height + 20));
 
             SDL_Rect dest = {x, y, text_width, text_height};
             SDL_RenderCopy(renderer, texture, NULL, &dest);
@@ -72,6 +94,7 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
     }
 
     TTF_CloseFont(font);
+    TTF_CloseFont(title_font);
 }
 
 void start_game(SDL_Renderer *renderer) {
