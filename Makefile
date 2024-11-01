@@ -1,5 +1,5 @@
 # Nom de l'exécutable
-TARGET = my_game
+TARGET = PestiVentura
 
 # Dossiers
 SRC_DIR = src
@@ -27,11 +27,11 @@ else
     ifeq ($(UNAME_S),Darwin)
         # Configuration pour macOS
         ifeq ($(shell test -d /opt/homebrew/opt/sdl2 && echo yes),yes)
-            SDL_CFLAGS := -I/opt/homebrew/include -I/opt/homebrew/opt/sdl2/include/SDL2 -I/opt/homebrew/opt/sdl2_ttf/include/SDL2 -I$(INCLUDE_DIR)
-            SDL_LDFLAGS := -L/opt/homebrew/lib -L/opt/homebrew/opt/sdl2/lib -L/opt/homebrew/opt/sdl2_ttf/lib -lSDL2 -lSDL2_ttf
+            SDL_CFLAGS := -I/opt/homebrew/include -I/opt/homebrew/opt/sdl2/include/SDL2 -I/opt/homebrew/opt/sdl2_ttf/include/SDL2 -I/opt/homebrew/opt/sdl2_image/include/SDL2 -I$(INCLUDE_DIR)
+            SDL_LDFLAGS := -L/opt/homebrew/lib -L/opt/homebrew/opt/sdl2/lib -L/opt/homebrew/opt/sdl2_ttf/lib -L/opt/homebrew/opt/sdl2_image/lib -lSDL2 -lSDL2_ttf -lSDL2_image
         else
             SDL_CFLAGS := -I/usr/local/include/SDL2 -I$(INCLUDE_DIR)
-            SDL_LDFLAGS := -L/usr/local/lib -lSDL2 -lSDL2_ttf
+            SDL_LDFLAGS := -L/usr/local/lib -lSDL2 -lSDL2_ttf -lSDL2_image
         endif
         RM := rm -rf
     endif
