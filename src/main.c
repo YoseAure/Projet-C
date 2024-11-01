@@ -4,6 +4,8 @@
 #include "../include/menu.h"
 #include "../include/game.h"
 
+bool exit_program = false;
+
 int main(int argc, char *argv[]) {
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         printf("Erreur SDL_Init: %s\n", SDL_GetError());
@@ -31,7 +33,7 @@ int main(int argc, char *argv[]) {
     int window_width = (int)(screen_width * reduction_factor);
     int window_height = (int)(screen_height * reduction_factor);
 
-    SDL_Window *window = SDL_CreateWindow("Les aventures de Pestiflore", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_width, window_height, SDL_WINDOW_SHOWN);
+    SDL_Window *window = SDL_CreateWindow("Les aventures de Pestyflore", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_width, window_height, SDL_WINDOW_SHOWN);
     if (!window) {
         printf("Erreur SDL_CreateWindow: %s\n", SDL_GetError());
         TTF_Quit();
@@ -48,8 +50,9 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Afficher le menu principal
-    display_main_menu(renderer);
+    while (!exit_program) {
+        display_main_menu(renderer);
+    }
 
     // Nettoyage
     SDL_DestroyRenderer(renderer);

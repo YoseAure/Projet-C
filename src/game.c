@@ -1,6 +1,8 @@
 #include "../include/game.h"
 #include "../include/menu.h"
 
+extern bool exit_program;
+
 void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
     TTF_Font *font = TTF_OpenFont("assets/fonts/mario-font.ttf", 24);
     if (!font) {
@@ -11,7 +13,7 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
     SDL_Color white = {255, 255, 255, 255};
     SDL_Color yellow = {255, 255, 0, 255};
 
-    const char *options[] = {"Retourner au menu principal"};
+    const char *options[] = {"Retourner au menu principal", "Options"};
     int selected = 0;
     bool quit = false;
     SDL_Event event;
@@ -27,12 +29,17 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
             }
             else if (event.type == SDL_KEYDOWN) {
                 switch (event.key.keysym.sym) {
+                    case SDLK_UP:
+                        selected = (selected - 1 + 2) % 2;
+                        break;
+                    case SDLK_DOWN:
+                        selected = (selected + 1) % 2;
+                        break;
                     case SDLK_RETURN:
                         if (selected == 0) {
                             *return_to_main_menu = true;
                             quit = true;
-                        }
-                        break;
+                        } break;
                     case SDLK_ESCAPE:
                         quit = true;
                         break;
@@ -43,7 +50,7 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        for (int i = 0; i < 1; ++i) {
+        for (int i = 0; i < 2; ++i) {
             SDL_Color color = (i == selected) ? yellow : white;
 
             SDL_Surface *surface = TTF_RenderText_Solid(font, options[i], color);
@@ -77,8 +84,7 @@ void start_game(SDL_Renderer *renderer) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 quit_game = true;
-            }
-            else if (event.type == SDL_KEYDOWN) {
+            } else if (event.type == SDL_KEYDOWN) {
                 if (event.key.keysym.sym == SDLK_ESCAPE) {
                     in_game_menu = !in_game_menu;
                 }
@@ -90,7 +96,7 @@ void start_game(SDL_Renderer *renderer) {
 
         if (in_game_menu) {
             display_in_game_menu(renderer, &return_to_main_menu);
-            in_game_menu = false; // Revenir au jeu après avoir quitté le menu en jeu -- à changer car bug pour quitter le jeu après avoir quitté le jeu via le menu in-game
+            in_game_menu = false;
         } else {
             // Logique du jeu
         }
@@ -99,6 +105,7 @@ void start_game(SDL_Renderer *renderer) {
     }
 
     if (return_to_main_menu) {
+        return_to_main_menu = false;
         display_main_menu(renderer);
     }
 }

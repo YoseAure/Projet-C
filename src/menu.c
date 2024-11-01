@@ -1,6 +1,8 @@
 #include "../include/menu.h"
 #include "../include/game.h"
 
+extern bool exit_program;
+
 // Structure pour stocker les informations des options de menu
 typedef struct {
     const char *text;
@@ -166,26 +168,26 @@ void display_main_menu(SDL_Renderer *renderer) {
     Uint32 start_time = SDL_GetTicks();
     int blink_interval = 1500;
 
-    while (!quit) {
+    while (!quit && !exit_program) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
+                exit_program = true;
                 quit = true;
             } else if (event.type == SDL_KEYDOWN) {
                 switch (event.key.keysym.sym) {
-                case SDLK_UP:
-                    selected = (selected - 1 + 3) % 3;
-                    break;
-                case SDLK_DOWN:
-                    selected = (selected + 1) % 3;
-                    break;
-                case SDLK_RETURN:
+                    case SDLK_UP:
+                        selected = (selected - 1 + 3) % 3;
+                        break;
+                    case SDLK_DOWN:
+                        selected = (selected + 1) % 3;
+                        break;
+                    case SDLK_RETURN:
                         if (selected == 0) {
                             start_game(renderer);
-                        }
-                        else if (selected == 2) {
+                        } else if (selected == 2) {
+                            exit_program = true;
                             quit = true;
-                        }
-                        break;
+                        } break;
                 }
             }
         }
@@ -193,6 +195,7 @@ void display_main_menu(SDL_Renderer *renderer) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
+        // Affichage du titre qui clignote
         Uint32 current_time = SDL_GetTicks();
         bool is_yellow = ((current_time - start_time) / blink_interval) % 2 == 0;
         SDL_Color title_color = is_yellow ? (SDL_Color){255, 255, 0, 255} : (SDL_Color){255, 255, 255, 255};
@@ -209,6 +212,7 @@ void display_main_menu(SDL_Renderer *renderer) {
         SDL_FreeSurface(title_surface);
         SDL_DestroyTexture(title_texture);
 
+        // Affichage des options du menu
         for (int i = 0; i < 3; ++i) {
             SDL_Color color = (i == selected) ? (SDL_Color){255, 255, 0, 255} : (SDL_Color){255, 255, 255, 255};
             TTF_Font *current_font = (i == selected) ? font_large : font;
