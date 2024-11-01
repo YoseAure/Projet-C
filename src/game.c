@@ -4,8 +4,10 @@
 extern bool exit_program;
 
 void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
-    TTF_Font *font = TTF_OpenFont("assets/fonts/mario-font.ttf", 24);
-    if (!font) {
+    TTF_Font *font = TTF_OpenFont("assets/fonts/mario-font-2.ttf", 24);
+    TTF_Font *title_font = TTF_OpenFont("assets/fonts/mario-font-2.ttf", 72);
+    
+    if (!font || !title_font) {
         printf("Erreur TTF_OpenFont: %s\n", TTF_GetError());
         return;
     }
@@ -13,7 +15,7 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
     SDL_Color white = {255, 255, 255, 255};
     SDL_Color yellow = {255, 255, 0, 255};
 
-    const char *options[] = {"Retourner au menu principal", "Options"};
+    const char *options[] = {"Main Menu", "Settings"};
     int selected = 0;
     bool quit = false;
     SDL_Event event;
@@ -21,11 +23,13 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
     int window_width, window_height;
     SDL_GetRendererOutputSize(renderer, &window_width, &window_height);
 
-    TTF_Font *title_font = TTF_OpenFont("assets/fonts/mario-font.ttf", 72); // Taille de police augmentée
-    if (!title_font) {
-        printf("Erreur TTF_OpenFont: %s\n", TTF_GetError());
+    SDL_Surface *logo_surface = IMG_Load("assets/images/surf.png");
+    if (!logo_surface) {
+        printf("Erreur IMG_Load: %s\n", IMG_GetError());
         return;
     }
+    SDL_Texture *logo_texture = SDL_CreateTextureFromSurface(renderer, logo_surface);
+    SDL_FreeSurface(logo_surface);
 
     while (!quit) {
         while (SDL_PollEvent(&event)) {
@@ -86,6 +90,10 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
             SDL_Rect dest = {x, y, text_width, text_height};
             SDL_RenderCopy(renderer, texture, NULL, &dest);
 
+            if (i == selected) {
+                render_logo(renderer, logo_texture, y, x);
+            }
+
             SDL_FreeSurface(surface);
             SDL_DestroyTexture(texture);
         }
@@ -93,6 +101,8 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
         SDL_RenderPresent(renderer);
     }
 
+    // Nettoyage
+    SDL_DestroyTexture(logo_texture);
     TTF_CloseFont(font);
     TTF_CloseFont(title_font);
 }
