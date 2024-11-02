@@ -1,15 +1,16 @@
-#include "../include/game.h"
-#include "../include/menu.h"
 #include "../include/settings.h"
+#include "../include/menu.h"
 
 extern bool exit_program;
 
-void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
+bool music_enabled = true;
+bool sound_effects_enabled = true;
+
+void settings(SDL_Renderer *renderer) {
     TTF_Font *font = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 32);
     TTF_Font *font_large = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 36);
-    TTF_Font *title_font = TTF_OpenFont("assets/fonts/mario-font-2.ttf", 72);
 
-    if (!font || !title_font || !font_large) {
+    if (!font || !font_large) {
         printf("Erreur TTF_OpenFont: %s\n", TTF_GetError());
         return;
     }
@@ -17,7 +18,7 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
     SDL_Color white = {255, 255, 255, 255};
     SDL_Color yellow = {255, 255, 0, 255};
 
-    const char *options[] = {"Main Menu", "Settings"};
+    const char *options[] = {"turn music off", "turn sound effects", "back to main menu"};
     int selected = 0;
     bool quit = false;
     SDL_Event event;
@@ -43,25 +44,33 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
     while (!quit) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
-                *return_to_main_menu = true;
                 quit = true;
             } else if (event.type == SDL_KEYDOWN) {
                 switch (event.key.keysym.sym) {
                     case SDLK_UP:
-                        selected = (selected - 1 + 2) % 2;
+                        selected = (selected - 1 + 3) % 3;
                         if (sound_effects_enabled) {
                             Mix_PlayChannel(-1, menu_selection_sound, 0);
                         }
                         break;
                     case SDLK_DOWN:
-                        selected = (selected + 1) % 2;
+                        selected = (selected + 1) % 3;
                         if (sound_effects_enabled) {
                             Mix_PlayChannel(-1, menu_selection_sound, 0);
                         }
                         break;
                     case SDLK_RETURN:
                         if (selected == 0) {
-                            *return_to_main_menu = true;
+                            music_enabled = !music_enabled;
+                            if (!music_enabled) {
+                                Mix_HaltMusic();
+                            } else {
+                                // Pour rejouer la musique si elle est reactivée
+                                Mix_PlayMusic(Mix_LoadMUS("assets/audio/background-music-1.mp3"), -1);
+                            }
+                        } else if (selected == 1) {
+                            sound_effects_enabled = !sound_effects_enabled;
+                        } else if (selected == 2) {
                             quit = true;
                         } break;
                     case SDLK_ESCAPE:
@@ -74,23 +83,8 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        // titre : Game Paused
-        SDL_Surface *title_surface = TTF_RenderText_Solid(title_font, "Game Paused", white);
-        SDL_Texture *title_texture = SDL_CreateTextureFromSurface(renderer, title_surface);
-
-        int title_width = title_surface->w;
-        int title_height = title_surface->h;
-        int title_x = (window_width - title_width) / 2;
-        int title_y = (window_height / 4) - (title_height / 2);
-
-        SDL_Rect title_dest = {title_x, title_y, title_width, title_height};
-        SDL_RenderCopy(renderer, title_texture, NULL, &title_dest);
-
-        SDL_FreeSurface(title_surface);
-        SDL_DestroyTexture(title_texture);
-
-        // options
-        for (int i = 0; i < 2; ++i) {
+        // Affichage des options du menu
+        for (int i = 0; i < 3; ++i) {
             SDL_Color color = (i == selected) ? yellow : white;
             TTF_Font *current_font = (i == selected) ? font_large : font;
 
@@ -116,46 +110,8 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
         SDL_RenderPresent(renderer);
     }
 
-    // Nettoyage
     Mix_FreeChunk(menu_selection_sound);
     SDL_DestroyTexture(logo_texture);
     TTF_CloseFont(font);
     TTF_CloseFont(font_large);
-    TTF_CloseFont(title_font);
-}
-
-void start_game(SDL_Renderer *renderer) {
-    bool quit_game = false;
-    bool return_to_main_menu = false;
-    bool in_game_menu = false;
-    SDL_Event event;
-
-    while (!quit_game && !return_to_main_menu) {
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                quit_game = true;
-            } else if (event.type == SDL_KEYDOWN) {
-                if (event.key.keysym.sym == SDLK_ESCAPE) {
-                    in_game_menu = !in_game_menu;
-                }
-            }
-        }
-
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
-
-        if (in_game_menu) {
-            display_in_game_menu(renderer, &return_to_main_menu);
-            in_game_menu = false;
-        } else {
-            // Logique du jeu
-        }
-
-        SDL_RenderPresent(renderer);
-    }
-
-    if (return_to_main_menu) {
-        return_to_main_menu = false;
-        display_main_menu(renderer);
-    }
 }

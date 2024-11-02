@@ -2,11 +2,11 @@
 
 ## Installation des bibliothèques nécessaires
 
-Pour installer les bibliothèques nécessaires (SDL2, SDL_ttf, SDL_image), utilisez les commandes suivantes :
+Pour installer les bibliothèques nécessaires (SDL2, SDL_ttf, SDL_image, SDL_mixer), utilisez les commandes suivantes :
 
 ### macOS
 ```sh
-brew install sdl2 sdl2_ttf sdl2_image
+brew install sdl2 sdl2_ttf sdl2_image sdl2_mixer
 ```
 
 ### Commandes disponibles dans le Makefile

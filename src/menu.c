@@ -1,5 +1,6 @@
 #include "../include/menu.h"
 #include "../include/game.h"
+#include "../include/settings.h"
 
 extern bool exit_program;
 
@@ -194,6 +195,13 @@ void display_main_menu(SDL_Renderer *renderer) {
     Uint32 start_time = SDL_GetTicks();
     int blink_interval = 1500;
 
+    Mix_Chunk *menu_selection_sound = Mix_LoadWAV("assets/audio/pop-sound.mp3");
+    if (!menu_selection_sound) {
+        printf("Erreur Mix_LoadWAV: %s\n", Mix_GetError());
+        exit_program = true;
+        quit = true;
+    }
+
     while (!quit && !exit_program) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
@@ -203,13 +211,19 @@ void display_main_menu(SDL_Renderer *renderer) {
                 switch (event.key.keysym.sym) {
                     case SDLK_UP:
                         selected = (selected - 1 + 3) % 3;
-                        break;
+                        if (sound_effects_enabled) {
+                            Mix_PlayChannel(-1, menu_selection_sound, 0);
+                        } break;
                     case SDLK_DOWN:
                         selected = (selected + 1) % 3;
-                        break;
+                        if (sound_effects_enabled) {
+                            Mix_PlayChannel(-1, menu_selection_sound, 0);
+                        } break;
                     case SDLK_RETURN:
                         if (selected == 0) {
                             start_game(renderer);
+                        } else if (selected == 1) {
+                            settings(renderer);
                         } else if (selected == 2) {
                             exit_program = true;
                             quit = true;
@@ -233,7 +247,7 @@ void display_main_menu(SDL_Renderer *renderer) {
         // Affichage du titre qui clignote
         Uint32 current_time = SDL_GetTicks();
         bool is_orange = ((current_time - start_time) / blink_interval) % 2 == 0;
-        SDL_Color title_color = is_orange ? (SDL_Color){0, 0, 0, 255} : (SDL_Color){0, 0, 0, 255}; // Jaune ou blanc
+        SDL_Color title_color = is_orange ? (SDL_Color){0, 0, 0, 255} : (SDL_Color){0, 0, 0, 255}; // Noir
         TTF_Font *current_title_font = is_orange ? title_font_large : title_font;
 
         SDL_Surface *title_surface = TTF_RenderText_Solid(current_title_font, title, title_color);
@@ -247,7 +261,7 @@ void display_main_menu(SDL_Renderer *renderer) {
         SDL_FreeSurface(title_surface);
         SDL_DestroyTexture(title_texture);
 
-        const char *subtitle = "L'apprenti surfeuse";
+        const char *subtitle = "L'apprentie surfeuse";
         SDL_Color subtitle_color = {255, 0, 0, 255}; // Rouge
 
         SDL_Surface *subtitle_surface = TTF_RenderText_Solid(font, subtitle, subtitle_color);
@@ -300,6 +314,7 @@ void display_main_menu(SDL_Renderer *renderer) {
         SDL_RenderPresent(renderer);
     }
 
+    Mix_FreeChunk(menu_selection_sound);
     SDL_DestroyTexture(van_texture);
     SDL_DestroyTexture(logo_texture);
     TTF_CloseFont(font);
