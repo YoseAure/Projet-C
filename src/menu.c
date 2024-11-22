@@ -2,6 +2,7 @@
 #include "../include/game.h"
 #include "../include/settings.h"
 #include "../include/tools.h"
+#include "../include/maps.h"
 
 extern bool exit_program;
 

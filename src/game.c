@@ -1,6 +1,7 @@
 #include "../include/game.h"
 #include "../include/menu.h"
 #include "../include/settings.h"
+#include "../include/maps.h"
 
 extern bool exit_program;
 
@@ -130,6 +131,14 @@ void start_game(SDL_Renderer *renderer) {
     bool in_game_menu = false;
     SDL_Event event;
 
+    int map_width = WORLD_WIDTH / TILE_SIZE;
+    int map_height = WORLD_HEIGHT / TILE_SIZE;
+    BlockType **map = load_map("assets/maps/map1.txt");
+    if (!map) {
+        printf("Erreur lors du chargement de la carte\n");
+        return;
+    }
+
     while (!quit_game && !return_to_main_menu) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
@@ -148,11 +157,13 @@ void start_game(SDL_Renderer *renderer) {
             display_in_game_menu(renderer, &return_to_main_menu);
             in_game_menu = false;
         } else {
-            // Logique du jeu
+            render_map(renderer, map, map_width, map_height);
         }
 
         SDL_RenderPresent(renderer);
     }
+
+    free_map(map, map_height);
 
     if (return_to_main_menu) {
         return_to_main_menu = false;

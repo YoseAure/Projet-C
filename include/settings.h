@@ -6,6 +6,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_mixer.h>
+#include "../include/menu.h"
 
 extern bool music_enabled;
 extern bool sound_effects_enabled;
