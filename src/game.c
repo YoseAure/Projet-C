@@ -1,9 +1,84 @@
 #include "../include/game.h"
 #include "../include/menu.h"
 #include "../include/settings.h"
-#include "../include/maps.h"
+#include "../include/maps.h" // Assurez-vous que maps.h est inclus
 
 extern bool exit_program;
+
+Player player = {5 * TILE_SIZE,
+                29 * TILE_SIZE, 
+                TILE_SIZE, 
+                TILE_SIZE, 
+                false, 
+                0, 
+                0};
+
+bool keys[SDL_NUM_SCANCODES] = {false};
+
+bool checkCollision(Player *player, SDL_Rect *obs) {
+    if (player->x + player->width > obs->x && player->x < obs->x + obs->w) {
+        if (player->y + player->height > obs->y && player->y < obs->y + obs->h) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void handle_input(SDL_Event *e) {
+    if (e->type == SDL_KEYDOWN) {
+        keys[e->key.keysym.scancode] = true;
+    } else if (e->type == SDL_KEYUP) {
+        keys[e->key.keysym.scancode] = false;
+    }
+}
+
+void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
+    if (keys[SDL_SCANCODE_LEFT] && player.x > 0) {
+        player.x -= MOVEMENT_SPEED;
+    }
+    if (keys[SDL_SCANCODE_RIGHT] && player.x + player.width < width * TILE_SIZE) {
+        player.x += MOVEMENT_SPEED;
+    }
+    if (keys[SDL_SCANCODE_SPACE] && !player.isJumping) {
+        if (currentTime - player.lastJump_t >= JUMP_DELAY) {
+            player.y_speed = JUMP_FORCE;
+            player.isJumping = true;
+            player.lastJump_t = currentTime;
+        }
+    }
+
+    player.y += player.y_speed;
+    if (player.isJumping) {
+        player.y_speed += GRAVITY;
+    }
+
+    bool onGround = false;
+    for (int i = 0; i < height; ++i) {
+        for (int j = 0; j < width; ++j) {
+            if (map[i][j] == GROUND || map[i][j] == BRICK) {
+                SDL_Rect obs = { j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+                if (checkCollision(&player, &obs)) {
+                    if (player.y_speed > 0) {
+                        player.y = obs.y - player.height;
+                        player.y_speed = 0;
+                        onGround = true;
+                    }
+                    if (player.y_speed < 0) {
+                        player.y = obs.y + obs.h;
+                        player.y_speed = 0;
+                    }
+                }
+            }
+        }
+    }
+
+    if (onGround) {
+        player.isJumping = false;
+        player.y_speed = 0;
+    } else {
+        player.isJumping = true;
+    }
+}
 
 void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
     TTF_Font *font = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 32);
@@ -139,34 +214,48 @@ void start_game(SDL_Renderer *renderer) {
         return;
     }
 
+    int cameraX = 0;
+    Uint32 lastTime = 0;
+
     while (!quit_game && !return_to_main_menu) {
+        Uint32 currentTime = SDL_GetTicks();
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 quit_game = true;
-            } else if (event.type == SDL_KEYDOWN) {
-                if (event.key.keysym.sym == SDLK_ESCAPE) {
+            } else if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
+                handle_input(&event);
+                if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
                     in_game_menu = !in_game_menu;
                 }
             }
         }
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
+        if (!in_game_menu) {
+            update_player(map, map_width, map_height, currentTime);
 
-        if (in_game_menu) {
-            display_in_game_menu(renderer, &return_to_main_menu);
-            in_game_menu = false;
+            if (player.x > cameraX + WINDOW_WIDTH / 2 && cameraX + WINDOW_WIDTH < WORLD_WIDTH) {
+                cameraX += SCROLL_SPEED;
+            } else if (player.x < cameraX + WINDOW_WIDTH / 2 && cameraX > 0) {
+                cameraX -= SCROLL_SPEED;
+            }
+
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+            SDL_RenderClear(renderer);
+
+            render_map(renderer, map, map_width, map_height, cameraX);
         } else {
-            render_map(renderer, map, map_width, map_height);
+            display_in_game_menu(renderer, &return_to_main_menu);
         }
 
         SDL_RenderPresent(renderer);
+        SDL_Delay(16); // ~60 fps
     }
-
-    free_map(map, map_height);
 
     if (return_to_main_menu) {
         return_to_main_menu = false;
+        reset_map(&map);
         display_main_menu(renderer);
+    } else {
+        free_map(map, map_height);
     }
 }

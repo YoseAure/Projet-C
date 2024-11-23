@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+extern Player player;
+
 BlockType** load_map(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -36,6 +38,8 @@ BlockType** load_map(const char *filename) {
                     break;
                 case 'P':
                     map[row][col] = PLAYER;
+                    player.x = col * TILE_SIZE;
+                    player.y = row * TILE_SIZE;
                     break;
                 default:
                     map[row][col] = EMPTY;
@@ -50,19 +54,24 @@ BlockType** load_map(const char *filename) {
 }
 
 void free_map(BlockType **map, int height) {
+    if (map == NULL) {
+        return;
+    }
     for (int i = 0; i < height; ++i) {
-        free(map[i]);
+        if (map[i] != NULL) {
+            free(map[i]);
+        }
     }
     free(map);
 }
 
-void render_map(SDL_Renderer *renderer, BlockType **map, int width, int height) {
+void render_map(SDL_Renderer *renderer, BlockType **map, int width, int height, int cameraX) {
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
-            SDL_Rect rect = { j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+            SDL_Rect rect = { j * TILE_SIZE - cameraX, i * TILE_SIZE, TILE_SIZE, TILE_SIZE };
             switch (map[i][j]) {
                 case GROUND:
-                    SDL_SetRenderDrawColor(renderer, 169, 169, 169, 255); // Gris moyen
+                    SDL_SetRenderDrawColor(renderer, 169, 169, 169, 255); // Gris
                     break;
                 case BRICK:
                     SDL_SetRenderDrawColor(renderer, 205, 133, 63, 255); // Marron clair
@@ -84,4 +93,15 @@ void render_map(SDL_Renderer *renderer, BlockType **map, int width, int height) 
             SDL_RenderFillRect(renderer, &rect);
         }
     }
+
+    SDL_Rect player_rect = { player.x - cameraX, player.y, player.width, player.height };
+    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Blue
+    SDL_RenderFillRect(renderer, &player_rect);
+}
+
+void reset_map(BlockType ***map) {
+    free_map(*map, WORLD_HEIGHT / TILE_SIZE);
+    *map = NULL;
+    player.x = 5 * TILE_SIZE;
+    player.y = 29 * TILE_SIZE;
 }
