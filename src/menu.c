@@ -5,6 +5,7 @@
 #include "../include/maps.h"
 
 extern bool exit_program;
+bool play_intro = true; // Ajouter un booléen pour contrôler l'animation d'introduction
 
 // Structure pour stocker les informations des options de menu
 typedef struct {
@@ -169,7 +170,15 @@ void display_main_menu(SDL_Renderer *renderer) {
     const char *title = "PestyVentura";
     const char *options[] = {"Start Game", "Settings", "Quit"};
     int options_count = sizeof(options) / sizeof(options[0]);
-    play_intro_animation(renderer, van_texture, title, title_font, font, options, options_count, &final_van_x, &final_van_y);
+
+    if (play_intro) {
+        play_intro_animation(renderer, van_texture, title, title_font, font, options, options_count, &final_van_x, &final_van_y);
+        play_intro = false;
+    } else {
+        final_van_x = (WINDOW_WIDTH) / 4;
+        final_van_y = WINDOW_HEIGHT - (WINDOW_HEIGHT / 4);
+    }
+
     int selected = 0;
     bool quit = false;
     SDL_Event event;
