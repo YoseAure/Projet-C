@@ -5,7 +5,7 @@
 #include "../include/maps.h"
 
 extern bool exit_program;
-bool play_intro = true; // Ajouter un booléen pour contrôler l'animation d'introduction
+bool play_intro = true;
 
 // Structure pour stocker les informations des options de menu
 typedef struct {

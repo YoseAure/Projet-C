@@ -1,7 +1,7 @@
 #include "../include/game.h"
 #include "../include/menu.h"
 #include "../include/settings.h"
-#include "../include/maps.h" // Assurez-vous que maps.h est inclus
+#include "../include/maps.h"
 
 extern bool exit_program;
 
@@ -80,7 +80,7 @@ void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
     }
 }
 
-void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
+void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu, bool *resume_game) {
     TTF_Font *font = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 32);
     TTF_Font *font_large = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 36);
     TTF_Font *title_font = TTF_OpenFont("assets/fonts/mario-font-2.ttf", 72);
@@ -93,7 +93,7 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
     SDL_Color white = {255, 255, 255, 255};
     SDL_Color yellow = {255, 255, 0, 255};
 
-    const char *options[] = {"Main Menu", "Settings"};
+    const char *options[] = {"Resume Game", "Main Menu", "Settings"};
     int selected = 0;
     bool quit = false;
     SDL_Event event;
@@ -124,23 +124,30 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
             } else if (event.type == SDL_KEYDOWN) {
                 switch (event.key.keysym.sym) {
                     case SDLK_UP:
-                        selected = (selected - 1 + 2) % 2;
+                        selected = (selected - 1 + 3) % 3;
                         if (sound_effects_enabled) {
                             Mix_PlayChannel(-1, menu_selection_sound, 0);
                         }
                         break;
                     case SDLK_DOWN:
-                        selected = (selected + 1) % 2;
+                        selected = (selected + 1) % 3;
                         if (sound_effects_enabled) {
                             Mix_PlayChannel(-1, menu_selection_sound, 0);
                         }
                         break;
                     case SDLK_RETURN:
                         if (selected == 0) {
+                            *resume_game = true;
+                            quit = true;
+                        } else if (selected == 1) {
                             *return_to_main_menu = true;
                             quit = true;
-                        } break;
+                        } else if (selected == 2) {
+                            settings(renderer);
+                        }
+                        break;
                     case SDLK_ESCAPE:
+                        *resume_game = true;
                         quit = true;
                         break;
                 }
@@ -166,7 +173,7 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu) {
         SDL_DestroyTexture(title_texture);
 
         // options
-        for (int i = 0; i < 2; ++i) {
+        for (int i = 0; i < 3; ++i) {
             SDL_Color color = (i == selected) ? yellow : white;
             TTF_Font *current_font = (i == selected) ? font_large : font;
 
@@ -204,6 +211,7 @@ void start_game(SDL_Renderer *renderer) {
     bool quit_game = false;
     bool return_to_main_menu = false;
     bool in_game_menu = false;
+    bool resume_game = false;
     SDL_Event event;
 
     int map_width = WORLD_WIDTH / TILE_SIZE;
@@ -244,7 +252,11 @@ void start_game(SDL_Renderer *renderer) {
 
             render_map(renderer, map, map_width, map_height, cameraX);
         } else {
-            display_in_game_menu(renderer, &return_to_main_menu);
+            display_in_game_menu(renderer, &return_to_main_menu, &resume_game);
+            if (resume_game) {
+                in_game_menu = false;
+                resume_game = false;
+            }
         }
 
         SDL_RenderPresent(renderer);

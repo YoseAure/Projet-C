@@ -13,6 +13,6 @@ typedef struct {
 } Player;
 
 void start_game(SDL_Renderer *renderer);
-void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu);
+void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu, bool *resume_game);
 
 #endif // GAME_H
