@@ -6,7 +6,7 @@
 extern bool exit_program;
 
 Player player = {5 * TILE_SIZE,
-                29 * TILE_SIZE, 
+                27 * TILE_SIZE, 
                 TILE_SIZE, 
                 TILE_SIZE, 
                 false, 
@@ -214,9 +214,7 @@ void start_game(SDL_Renderer *renderer) {
     bool resume_game = false;
     SDL_Event event;
 
-    int map_width = WORLD_WIDTH / TILE_SIZE;
-    int map_height = WORLD_HEIGHT / TILE_SIZE;
-    BlockType **map = load_map("assets/maps/map1.txt");
+    Map *map = load_map("assets/maps/map1.txt");
     if (!map) {
         printf("Erreur lors du chargement de la carte\n");
         return;
@@ -239,7 +237,7 @@ void start_game(SDL_Renderer *renderer) {
         }
 
         if (!in_game_menu) {
-            update_player(map, map_width, map_height, currentTime);
+            update_player(map->blocks, map->width, map->height, currentTime);
 
             if (player.x > cameraX + WINDOW_WIDTH / 2 && cameraX + WINDOW_WIDTH < WORLD_WIDTH) {
                 cameraX += SCROLL_SPEED;
@@ -250,7 +248,7 @@ void start_game(SDL_Renderer *renderer) {
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             SDL_RenderClear(renderer);
 
-            render_map(renderer, map, map_width, map_height, cameraX);
+            render_map(renderer, map, cameraX);
         } else {
             display_in_game_menu(renderer, &return_to_main_menu, &resume_game);
             if (resume_game) {
@@ -268,6 +266,6 @@ void start_game(SDL_Renderer *renderer) {
         reset_map(&map);
         display_main_menu(renderer);
     } else {
-        free_map(map, map_height);
+        free_map(map);
     }
 }

@@ -2,14 +2,14 @@
 #define CONSTANTS_H
 
 // general
-#define WINDOW_WIDTH 1600
-#define WINDOW_HEIGHT 1000
+#define WINDOW_WIDTH 800
+#define WINDOW_HEIGHT 600
 
 #define TILE_SIZE 20
 
 // Maps
-#define WORLD_WIDTH 800
-#define WORLD_HEIGHT 600
+#define WORLD_WIDTH 6000
+#define WORLD_HEIGHT 620
 
 typedef enum {
     EMPTY,
@@ -20,11 +20,11 @@ typedef enum {
     PLAYER
 } BlockType;
 
-// Player part mariobros
+// Player partie mariobros
 #define GRAVITY 1
-#define JUMP_FORCE -15
-#define JUMP_DELAY 600 // ms
-#define MOVEMENT_SPEED 5
-#define SCROLL_SPEED 5
+#define JUMP_FORCE -18
+#define JUMP_DELAY 500 // ms
+#define MOVEMENT_SPEED 6
+#define SCROLL_SPEED 6
 
 #endif // CONSTANTS_H

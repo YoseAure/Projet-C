@@ -4,7 +4,7 @@
 
 extern Player player;
 
-BlockType** load_map(const char *filename) {
+Map* load_map(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (!file) {
         printf("Erreur lors de l'ouverture du fichier de carte: %s\n", filename);
@@ -14,9 +14,33 @@ BlockType** load_map(const char *filename) {
     int width = WORLD_WIDTH / TILE_SIZE;
     int height = WORLD_HEIGHT / TILE_SIZE;
 
-    BlockType **map = malloc(height * sizeof(BlockType*));
+    Map *map = malloc(sizeof(Map));
+    if (map == NULL) {
+        fclose(file);
+        return NULL;
+    }
+
+    map->width = width;
+    map->height = height;
+
+    map->blocks = malloc(height * sizeof(BlockType*));
+    if (map->blocks == NULL) {
+        free(map);
+        fclose(file);
+        return NULL;
+    }
+
     for (int i = 0; i < height; ++i) {
-        map[i] = malloc(width * sizeof(BlockType));
+        map->blocks[i] = malloc(width * sizeof(BlockType));
+        if (map->blocks[i] == NULL) {
+            for (int j = 0; j < i; ++j) {
+                free(map->blocks[j]);
+            }
+            free(map->blocks);
+            free(map);
+            fclose(file);
+            return NULL;
+        }
     }
 
     char line[width + 1];
@@ -25,24 +49,24 @@ BlockType** load_map(const char *filename) {
         for (int col = 0; col < width && line[col] != '\0'; col++) {
             switch (line[col]) {
                 case 'G':
-                    map[row][col] = GROUND;
+                    map->blocks[row][col] = GROUND;
                     break;
                 case 'B':
-                    map[row][col] = BRICK;
+                    map->blocks[row][col] = BRICK;
                     break;
                 case 'C':
-                    map[row][col] = COIN;
+                    map->blocks[row][col] = COIN;
                     break;
                 case 'E':
-                    map[row][col] = ENEMY;
+                    map->blocks[row][col] = ENEMY;
                     break;
                 case 'P':
-                    map[row][col] = PLAYER;
+                    map->blocks[row][col] = PLAYER;
                     player.x = col * TILE_SIZE;
                     player.y = row * TILE_SIZE;
                     break;
                 default:
-                    map[row][col] = EMPTY;
+                    map->blocks[row][col] = EMPTY;
                     break;
             }
         }
@@ -53,23 +77,23 @@ BlockType** load_map(const char *filename) {
     return map;
 }
 
-void free_map(BlockType **map, int height) {
+void free_map(Map *map) {
     if (map == NULL) {
         return;
     }
-    for (int i = 0; i < height; ++i) {
-        if (map[i] != NULL) {
-            free(map[i]);
-        }
+
+    for (int i = 0; i < map->height; ++i) {
+        free(map->blocks[i]);
     }
+    free(map->blocks);
     free(map);
 }
 
-void render_map(SDL_Renderer *renderer, BlockType **map, int width, int height, int cameraX) {
-    for (int i = 0; i < height; ++i) {
-        for (int j = 0; j < width; ++j) {
+void render_map(SDL_Renderer *renderer, Map *map, int cameraX) {
+    for (int i = 0; i < map->height; ++i) {
+        for (int j = 0; j < map->width; ++j) {
             SDL_Rect rect = { j * TILE_SIZE - cameraX, i * TILE_SIZE, TILE_SIZE, TILE_SIZE };
-            switch (map[i][j]) {
+            switch (map->blocks[i][j]) {
                 case GROUND:
                     SDL_SetRenderDrawColor(renderer, 169, 169, 169, 255); // Gris
                     break;
@@ -99,8 +123,8 @@ void render_map(SDL_Renderer *renderer, BlockType **map, int width, int height, 
     SDL_RenderFillRect(renderer, &player_rect);
 }
 
-void reset_map(BlockType ***map) {
-    free_map(*map, WORLD_HEIGHT / TILE_SIZE);
+void reset_map(Map **map) {
+    free_map(*map);
     *map = NULL;
     player.x = 5 * TILE_SIZE;
     player.y = 29 * TILE_SIZE;
