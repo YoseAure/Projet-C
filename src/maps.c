@@ -4,6 +4,79 @@
 
 extern Player player;
 
+SDL_Texture *ground_texture = NULL;
+SDL_Texture *brick_texture = NULL;
+SDL_Texture *coin_texture = NULL;
+SDL_Texture *enemy_texture = NULL;
+SDL_Texture *player_texture = NULL;
+SDL_Texture *background_texture = NULL;
+
+bool load_block_textures(SDL_Renderer *renderer) {
+    ground_texture = IMG_LoadTexture(renderer, "../assets/images/floor.png");
+    if (!ground_texture) {
+        printf("Error loading ground texture: %s\n", SDL_GetError());
+        return false;
+    }
+
+    brick_texture = IMG_LoadTexture(renderer, "../assets/images/brick.png");
+    if (!brick_texture) {
+        printf("Error loading brick texture: %s\n", SDL_GetError());
+        return false;
+    }
+
+    background_texture = IMG_LoadTexture(renderer, "../assets/images/background.jpeg");
+    if (background_texture == NULL) {
+        printf("Error loading background texture: %s\n", SDL_GetError());
+    }
+
+    coin_texture = IMG_LoadTexture(renderer, "../assets/images/coin.gif");
+    if (!coin_texture) {
+        printf("Error loading coin texture: %s\n", SDL_GetError());
+        return false;
+    }
+
+    enemy_texture = IMG_LoadTexture(renderer, "../assets/images/enemy.gif");
+    if (!enemy_texture) {
+        printf("Error loading ennemy texture: %s\n", SDL_GetError());
+        return false;
+    }
+
+    player_texture = IMG_LoadTexture(renderer, "../assets/images/player.gif");
+    if (!player_texture) {
+        printf("Error loading player texture: %s\n", SDL_GetError());
+        return false;
+    }
+
+    return true;
+}
+
+void free_block_textures() {
+    if (ground_texture) {
+        SDL_DestroyTexture(ground_texture);
+        ground_texture = NULL;
+    }
+    if (brick_texture) {
+        SDL_DestroyTexture(brick_texture);
+        brick_texture = NULL;
+    }
+    if (coin_texture) {
+        SDL_DestroyTexture(coin_texture);
+        coin_texture = NULL;
+    }
+    if (enemy_texture) {
+        SDL_DestroyTexture(enemy_texture);
+        enemy_texture = NULL;
+    }
+    if (player_texture) {
+        SDL_DestroyTexture(player_texture);
+        player_texture = NULL;
+    }
+    if (background_texture) {
+        SDL_DestroyTexture(background_texture);
+        background_texture = NULL;
+    }
+}
+
 Map* load_map(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -90,42 +163,41 @@ void free_map(Map *map) {
 }
 
 void render_map(SDL_Renderer *renderer, Map *map, int cameraX) {
+    SDL_Rect backgroundRect = {0, 0, 599 * TILE_SIZE, 202 * TILE_SIZE};
+    SDL_RenderCopy(renderer, background_texture, NULL, &backgroundRect);
     for (int i = 0; i < map->height; ++i) {
         for (int j = 0; j < map->width; ++j) {
             SDL_Rect rect = { j * TILE_SIZE - cameraX, i * TILE_SIZE, TILE_SIZE, TILE_SIZE };
             switch (map->blocks[i][j]) {
                 case GROUND:
-                    SDL_SetRenderDrawColor(renderer, 169, 169, 169, 255); // Gris
+                    SDL_RenderCopy(renderer, ground_texture, NULL, &rect);
                     break;
                 case BRICK:
-                    SDL_SetRenderDrawColor(renderer, 205, 133, 63, 255); // Marron clair
+                    SDL_RenderCopy(renderer, brick_texture, NULL, &rect);
                     break;
                 case COIN:
-                    SDL_SetRenderDrawColor(renderer, 255, 215, 0, 255); // Gold
+                    SDL_RenderCopy(renderer, coin_texture, NULL, &rect);
                     break;
                 case ENEMY:
-                    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red
+                    SDL_RenderCopy(renderer, enemy_texture, NULL, &rect);
                     break;
                 case PLAYER:
-                    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Blue
+                    SDL_RenderCopy(renderer, player_texture, NULL, &rect);
                     break;
                 case EMPTY:
                 default:
-                    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Black
                     break;
             }
-            SDL_RenderFillRect(renderer, &rect);
         }
     }
 
     SDL_Rect player_rect = { player.x - cameraX, player.y, player.width, player.height };
-    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Blue
-    SDL_RenderFillRect(renderer, &player_rect);
+    SDL_RenderCopy(renderer, player_texture, NULL, &player_rect);
 }
 
 void reset_map(Map **map) {
     free_map(*map);
     *map = NULL;
     player.x = 5 * TILE_SIZE;
-    player.y = 29 * TILE_SIZE;
+    player.y = 10 * TILE_SIZE;
 }

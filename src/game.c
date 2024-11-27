@@ -6,9 +6,9 @@
 extern bool exit_program;
 
 Player player = {5 * TILE_SIZE,
-                27 * TILE_SIZE, 
+                10 * TILE_SIZE, 
                 TILE_SIZE, 
-                TILE_SIZE, 
+                TILE_SIZE * 2, 
                 false, 
                 0, 
                 0};
@@ -33,12 +33,46 @@ void handle_input(SDL_Event *e) {
 }
 
 void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
-    if (keys[SDL_SCANCODE_LEFT] && player.x > 0) {
-        player.x -= MOVEMENT_SPEED;
+    if (keys[SDL_SCANCODE_LEFT]) {
+        bool canMove = true;
+        for (int i = 0; i < height; ++i) {
+            for (int j = 0; j < width; ++j) {
+                if (map[i][j] == BRICK || map[i][j] == GROUND) {
+                    SDL_Rect obs = { j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+                    if (player.x - MOVEMENT_SPEED < obs.x + obs.w &&
+                        player.x + player.width - MOVEMENT_SPEED > obs.x &&
+                        player.y + player.height > obs.y && player.y < obs.y + obs.h) {
+                        canMove = false;
+                        break;
+                    }
+                }
+            }
+        }
+        if (canMove && player.x > 0) {
+            player.x -= MOVEMENT_SPEED;
+        }
     }
-    if (keys[SDL_SCANCODE_RIGHT] && player.x + player.width < width * TILE_SIZE) {
-        player.x += MOVEMENT_SPEED;
+
+    if (keys[SDL_SCANCODE_RIGHT]) {
+        bool canMove = true;
+        for (int i = 0; i < height; ++i) {
+            for (int j = 0; j < width; ++j) {
+                if (map[i][j] == BRICK || map[i][j] == GROUND) {
+                    SDL_Rect obs = { j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+                    if (player.x + player.width + MOVEMENT_SPEED > obs.x &&
+                        player.x + MOVEMENT_SPEED < obs.x + obs.w &&
+                        player.y + player.height > obs.y && player.y < obs.y + obs.h) {
+                        canMove = false;
+                        break;
+                    }
+                }
+            }
+        }
+        if (canMove && player.x + player.width < width * TILE_SIZE) {
+            player.x += MOVEMENT_SPEED;
+        }
     }
+
     if (keys[SDL_SCANCODE_SPACE] && !player.isJumping) {
         if (currentTime - player.lastJump_t >= JUMP_DELAY) {
             player.y_speed = JUMP_FORCE;
@@ -214,6 +248,12 @@ void start_game(SDL_Renderer *renderer) {
     bool resume_game = false;
     SDL_Event event;
 
+    load_block_textures(renderer);
+    if (!load_block_textures(renderer)) {
+        printf("Erreur lors du chargement des textures des blocs\n");
+        return;
+    }
+
     Map *map = load_map("assets/maps/map1.txt");
     if (!map) {
         printf("Erreur lors du chargement de la carte\n");
@@ -268,4 +308,6 @@ void start_game(SDL_Renderer *renderer) {
     } else {
         free_map(map);
     }
+
+    free_block_textures();
 }
