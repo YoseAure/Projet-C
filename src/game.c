@@ -2,13 +2,24 @@
 #include "../include/menu.h"
 #include "../include/settings.h"
 #include "../include/maps.h"
+#include "../include/sprite.h"
 
 extern bool exit_program;
+extern SDL_Texture *player_texture;
+SDL_Rect player_clips[SPRITE_ROWS][SPRITE_COLS];
+int current_frame = 0;
+int animation_row = 24;
+int previous_mouvement = 24;
+Uint32 last_frame_time = 0;
+const Uint32 FRAME_DELAY = 100;
+
+bool mario_gameType = false;
+bool pokemon_gameType = true;
 
 Player player = {5 * TILE_SIZE,
-                10 * TILE_SIZE, 
+                20 * TILE_SIZE, 
                 TILE_SIZE, 
-                TILE_SIZE * 2, 
+                TILE_SIZE * 1.5, 
                 false, 
                 0, 
                 0};
@@ -33,6 +44,9 @@ void handle_input(SDL_Event *e) {
 }
 
 void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
+    bool moving = false;
+    // animation_row = IDLE;
+
     if (keys[SDL_SCANCODE_LEFT]) {
         bool canMove = true;
         for (int i = 0; i < height; ++i) {
@@ -50,6 +64,8 @@ void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
         }
         if (canMove && player.x > 0) {
             player.x -= MOVEMENT_SPEED;
+            animation_row = LEFT;
+            moving = true;
         }
     }
 
@@ -70,48 +86,151 @@ void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
         }
         if (canMove && player.x + player.width < width * TILE_SIZE) {
             player.x += MOVEMENT_SPEED;
+            animation_row = RIGHT;
+            moving = true;
         }
     }
 
-    if (keys[SDL_SCANCODE_SPACE] && !player.isJumping) {
-        if (currentTime - player.lastJump_t >= JUMP_DELAY) {
-            player.y_speed = JUMP_FORCE;
-            player.isJumping = true;
-            player.lastJump_t = currentTime;
-        }
-    }
-
-    player.y += player.y_speed;
-    if (player.isJumping) {
-        player.y_speed += GRAVITY;
-    }
-
-    bool onGround = false;
-    for (int i = 0; i < height; ++i) {
-        for (int j = 0; j < width; ++j) {
-            if (map[i][j] == GROUND || map[i][j] == BRICK) {
-                SDL_Rect obs = { j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE };
-                if (checkCollision(&player, &obs)) {
-                    if (player.y_speed > 0) {
-                        player.y = obs.y - player.height;
-                        player.y_speed = 0;
-                        onGround = true;
-                    }
-                    if (player.y_speed < 0) {
-                        player.y = obs.y + obs.h;
-                        player.y_speed = 0;
+    if (pokemon_gameType) {
+        if (keys[SDL_SCANCODE_UP]) {
+            bool canMove = true;
+            for (int i = 0; i < height; ++i) {
+                for (int j = 0; j < width; ++j) {
+                    if (map[i][j] == BRICK || map[i][j] == GROUND) {
+                        SDL_Rect obs = { j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+                        if (player.y - MOVEMENT_SPEED < obs.y + obs.h &&
+                            player.y + player.height - MOVEMENT_SPEED > obs.y &&
+                            player.x + player.width > obs.x && player.x < obs.x + obs.w) {
+                            canMove = false;
+                            break;
+                        }
                     }
                 }
+            }
+            if (canMove && player.y > 0) {
+                player.y -= MOVEMENT_SPEED;
+                animation_row = UP;
+                moving = true;
+            }
+        }
+
+        if (keys[SDL_SCANCODE_DOWN]) {
+            bool canMove = true;
+            for (int i = 0; i < height; ++i) {
+                for (int j = 0; j < width; ++j) {
+                    if (map[i][j] == BRICK || map[i][j] == GROUND) {
+                        SDL_Rect obs = { j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+                        if (player.y + player.height + MOVEMENT_SPEED > obs.y &&
+                            player.y + MOVEMENT_SPEED < obs.y + obs.h &&
+                            player.x + player.width > obs.x && player.x < obs.x + obs.w) {
+                            canMove = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (canMove && player.y + player.height < height * TILE_SIZE) {
+                player.y += MOVEMENT_SPEED;
+                animation_row = DOWN;
+                moving = true;
             }
         }
     }
 
-    if (onGround) {
-        player.isJumping = false;
-        player.y_speed = 0;
-    } else {
-        player.isJumping = true;
+    if (mario_gameType) {
+        if (keys[SDL_SCANCODE_SPACE] && !player.isJumping) {
+            if (currentTime - player.lastJump_t >= JUMP_DELAY) {
+                player.y_speed = JUMP_FORCE;
+                player.isJumping = true;
+                player.lastJump_t = currentTime;
+                animation_row = JUMP;
+            }
+        }
+
+        player.y += player.y_speed;
+        if (player.isJumping) {
+            player.y_speed += GRAVITY;
+        }
+
+        bool onGround = false;
+        for (int i = 0; i < height; ++i) {
+            for (int j = 0; j < width; ++j) {
+                if (map[i][j] == GROUND || map[i][j] == BRICK) {
+                    SDL_Rect obs = { j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+                    if (checkCollision(&player, &obs)) {
+                        if (player.y_speed > 0) {
+                            player.y = obs.y - player.height;
+                            player.y_speed = 0;
+                            onGround = true;
+                        }
+                        if (player.y_speed < 0) {
+                            player.y = obs.y + obs.h;
+                            player.y_speed = 0;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (onGround) {
+            player.isJumping = false;
+            player.y_speed = 0;
+        } else {
+            player.isJumping = true;
+        }
     }
+
+    if (!moving && !player.isJumping) {
+        if (previous_mouvement == LEFT || previous_mouvement == IDLE_LEFT) {
+            animation_row = IDLE_LEFT;
+        } else if (previous_mouvement == RIGHT || previous_mouvement == IDLE_RIGHT) {
+            animation_row = IDLE_RIGHT;
+        } else if (previous_mouvement == UP || previous_mouvement == IDLE_UP) {
+            animation_row = IDLE_UP;
+        } else {
+            animation_row = IDLE;
+        }
+    }
+    //     FRAME_DELAY = 100;
+    // } else {
+    //     FRAME_DELAY = 100;
+    // }
+
+    // Animation du perso
+    if (currentTime - last_frame_time >= FRAME_DELAY) {
+        switch (animation_row) {
+            case JUMP:
+                current_frame = (current_frame + 1) % 4;
+                break;
+            case LEFT:
+            case RIGHT:
+            case UP:
+            case DOWN:
+                current_frame = (current_frame + 1) % 7;
+                break;
+            case IDLE:
+            case IDLE_RIGHT:
+            case IDLE_LEFT:
+            case IDLE_UP:
+                current_frame = (current_frame + 1) % 2;
+                break;
+            default:
+                animation_row = IDLE;
+                current_frame = (current_frame + 1) % 2;
+                break;
+        }
+        last_frame_time = currentTime;
+        previous_mouvement = animation_row;
+    }
+}
+
+void render_player(SDL_Renderer *renderer, int cameraX) {
+    SDL_Rect player_rect = { player.x - cameraX, player.y, player.width, player.height };
+    SDL_SetRenderDrawColor(renderer, 0, 0, 139, 255); // Bleu foncé
+    SDL_RenderFillRect(renderer, &player_rect);
+
+    SDL_Rect sprite_rect = { player.x - cameraX + (player.width - SPRITE_WIDTH) / 2, player.y - (SPRITE_HEIGHT - player.height) + 2, SPRITE_WIDTH, SPRITE_HEIGHT };
+    SDL_RenderCopy(renderer, princess_texture, &princess_clips[animation_row][current_frame], &sprite_rect);
 }
 
 void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu, bool *resume_game) {
@@ -254,11 +373,18 @@ void start_game(SDL_Renderer *renderer) {
         return;
     }
 
-    Map *map = load_map("assets/maps/map1.txt");
+    Map *map = load_map("assets/maps/map-1.0.txt");
     if (!map) {
         printf("Erreur lors du chargement de la carte\n");
         return;
     }
+
+    princess_texture = loadTexture("assets/sprites/naked-player.png", renderer);
+    if (!princess_texture) {
+        printf("Erreur lors du chargement de la texture du joueur: %s\n", SDL_GetError());
+        return;
+    }
+    getSpriteClips(princess_clips, SPRITE_ROWS, SPRITE_COLS);
 
     int cameraX = 0;
     Uint32 lastTime = 0;
@@ -289,6 +415,7 @@ void start_game(SDL_Renderer *renderer) {
             SDL_RenderClear(renderer);
 
             render_map(renderer, map, cameraX);
+            render_player(renderer, cameraX);
         } else {
             display_in_game_menu(renderer, &return_to_main_menu, &resume_game);
             if (resume_game) {

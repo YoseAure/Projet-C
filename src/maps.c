@@ -41,7 +41,7 @@ bool load_block_textures(SDL_Renderer *renderer) {
         return false;
     }
 
-    player_texture = IMG_LoadTexture(renderer, "../assets/images/player.gif");
+    player_texture = IMG_LoadTexture(renderer, "../assets/sprites/naked-player.png");
     if (!player_texture) {
         printf("Error loading player texture: %s\n", SDL_GetError());
         return false;
@@ -74,6 +74,14 @@ void free_block_textures() {
     if (background_texture) {
         SDL_DestroyTexture(background_texture);
         background_texture = NULL;
+    }
+}
+
+void init_map(Map *map) {
+    for (int i = 0; i < map->height; ++i) {
+        for (int j = 0; j < map->width; ++j) {
+            map->blocks[i][j] = EMPTY;
+        }
     }
 }
 
@@ -116,6 +124,8 @@ Map* load_map(const char *filename) {
         }
     }
 
+    init_map(map);
+
     char line[width + 1];
     int row = 0;
     while (fgets(line, sizeof(line), file) && row < height) {
@@ -132,11 +142,6 @@ Map* load_map(const char *filename) {
                     break;
                 case 'E':
                     map->blocks[row][col] = ENEMY;
-                    break;
-                case 'P':
-                    map->blocks[row][col] = PLAYER;
-                    player.x = col * TILE_SIZE;
-                    player.y = row * TILE_SIZE;
                     break;
                 default:
                     map->blocks[row][col] = EMPTY;
@@ -181,18 +186,12 @@ void render_map(SDL_Renderer *renderer, Map *map, int cameraX) {
                 case ENEMY:
                     SDL_RenderCopy(renderer, enemy_texture, NULL, &rect);
                     break;
-                case PLAYER:
-                    SDL_RenderCopy(renderer, player_texture, NULL, &rect);
-                    break;
                 case EMPTY:
                 default:
                     break;
             }
         }
     }
-
-    SDL_Rect player_rect = { player.x - cameraX, player.y, player.width, player.height };
-    SDL_RenderCopy(renderer, player_texture, NULL, &player_rect);
 }
 
 void reset_map(Map **map) {
