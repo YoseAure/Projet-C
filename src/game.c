@@ -13,8 +13,8 @@ int previous_mouvement = 24;
 Uint32 last_frame_time = 0;
 const Uint32 FRAME_DELAY = 100;
 
-bool mario_gameType = false;
-bool pokemon_gameType = true;
+bool mario_gameType = true;
+bool pokemon_gameType = false;
 
 Player player = {5 * TILE_SIZE,
                 20 * TILE_SIZE, 
@@ -225,12 +225,12 @@ void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
 }
 
 void render_player(SDL_Renderer *renderer, int cameraX) {
-    SDL_Rect player_rect = { player.x - cameraX, player.y, player.width, player.height };
-    SDL_SetRenderDrawColor(renderer, 0, 0, 139, 255); // Bleu foncé
-    SDL_RenderFillRect(renderer, &player_rect);
+    // SDL_Rect player_rect = { player.x - cameraX, player.y, player.width, player.height };
+    // SDL_SetRenderDrawColor(renderer, 0, 0, 139, 255); // Bleu foncé
+    // SDL_RenderFillRect(renderer, &player_rect);
 
     SDL_Rect sprite_rect = { player.x - cameraX + (player.width - SPRITE_WIDTH) / 2, player.y - (SPRITE_HEIGHT - player.height) + 2, SPRITE_WIDTH, SPRITE_HEIGHT };
-    SDL_RenderCopy(renderer, princess_texture, &princess_clips[animation_row][current_frame], &sprite_rect);
+    SDL_RenderCopy(renderer, player_texture, &player_clips[animation_row][current_frame], &sprite_rect);
 }
 
 void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu, bool *resume_game) {
@@ -379,12 +379,12 @@ void start_game(SDL_Renderer *renderer) {
         return;
     }
 
-    princess_texture = loadTexture("assets/sprites/naked-player.png", renderer);
-    if (!princess_texture) {
+    player_texture = loadTexture("assets/sprites/naked-player.png", renderer);
+    if (!player_texture) {
         printf("Erreur lors du chargement de la texture du joueur: %s\n", SDL_GetError());
         return;
     }
-    getSpriteClips(princess_clips, SPRITE_ROWS, SPRITE_COLS);
+    getSpriteClips(player_clips, SPRITE_ROWS, SPRITE_COLS);
 
     int cameraX = 0;
     Uint32 lastTime = 0;
