@@ -11,7 +11,8 @@ typedef struct {
     int y_speed;
     Uint32 lastJump_t;
     int life_points;
-    Uint32 last_hit_time; // Ajoutez ce champ
+    Uint32 last_hit_time;
+    int coin_count;
 } Player;
 
 void start_game(SDL_Renderer *renderer);

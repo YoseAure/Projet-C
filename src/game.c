@@ -12,8 +12,9 @@ Player player = {5 * TILE_SIZE,
                 false, 
                 0, 
                 0,
-                 1,
-                 0}; // Initialisez last_hit_time à 0
+                1,
+                0,
+                0};
 
 bool keys[SDL_NUM_SCANCODES] = {false};
 
@@ -34,18 +35,27 @@ void handle_input(SDL_Event *e) {
     }
 }
 
-void reset_player_position() {
-    player.x = 5 * TILE_SIZE;
-    player.y = 10 * TILE_SIZE;
-    player.life_points = 1; // Réinitialise la vie du joueur
-    player.last_hit_time = 0;
-    player.isJumping = false;
-    player.y_speed = 0;
+void reset_player(Player *player) {
+    player->x = 5 * TILE_SIZE;
+    player->y = 10 * TILE_SIZE;
+    player->life_points = 1; // Réinitialise la vie du joueur
+    player->last_hit_time = 0;
+    player->isJumping = false;
+    player->y_speed = 0;
     // Réinitialiser l'inertie
     memset(keys, 0, sizeof(keys));
+    player->coin_count = 0;
+}
+
+void reset_camera_position(int *cameraX) {
+    *cameraX = 0; // Réinitialise la position de la caméra
 }
 
 void display_game_over_menu(SDL_Renderer *renderer) {
+    // Réinitialise la vie du joueur et la position de la caméra au début de la fonction
+    player.life_points = 1;
+    int cameraX = 0;
+
     TTF_Font *font = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 32);
     TTF_Font *font_large = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 36);
     TTF_Font *title_font = TTF_OpenFont("assets/fonts/mario-font-2.ttf", 72);
@@ -83,7 +93,9 @@ void display_game_over_menu(SDL_Renderer *renderer) {
                     case SDLK_RETURN:
                         if (selected == 0) {
                             quit = true;
-                            reset_player_position(); // Réinitialise la position et la vie du joueur
+                            reset_player(&player); // Réinitialise la position et la vie du joueur
+                            reset_camera_position(&cameraX); // Réinitialise la position de la caméra
+                            start_game(renderer); // Recommence une nouvelle partie
                         } else if (selected == 1) {
                             return_to_main_menu = true;
                             quit = true;
@@ -94,7 +106,7 @@ void display_game_over_menu(SDL_Renderer *renderer) {
                         break;
                     case SDLK_ESCAPE:
                         exit_program = true;
-                        quit = true;
+                        quit = true;player.life_points =0;
                         break;
                 }
             }
@@ -147,8 +159,42 @@ void display_game_over_menu(SDL_Renderer *renderer) {
     TTF_CloseFont(title_font);
 
     if (return_to_main_menu) {
+        reset_player(&player); 
+        reset_camera_position(&cameraX);
         display_main_menu(renderer);
     }
+}
+
+int coin_count; // Compteur de pièces récupérées
+
+void render_coin_count(SDL_Renderer *renderer, int coin_count) {
+    TTF_Font *font = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 24);
+    if (!font) {
+        printf("Erreur TTF_OpenFont: %s\n", TTF_GetError());
+        return;
+    }
+
+    SDL_Color white = {255, 255, 255, 255};
+    char coin_text[20];
+    sprintf(coin_text, "Sexwax: %d", coin_count);
+
+    SDL_Surface *surface = TTF_RenderText_Solid(font, coin_text, white);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+    int text_width = surface->w;
+    int text_height = surface->h;
+    SDL_Rect dest = {WINDOW_WIDTH - text_width - 10, 10, text_width, text_height};
+
+    // Dessiner un rectangle noir derrière le texte
+    SDL_Rect background_rect = {dest.x - 5, dest.y - 5, text_width + 10, text_height + 10};
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Couleur noire
+    SDL_RenderFillRect(renderer, &background_rect);
+
+    SDL_RenderCopy(renderer, texture, NULL, &dest);
+
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
+    TTF_CloseFont(font);
 }
 
 void update_player(BlockType **map, int width, int height, Uint32 currentTime, SDL_Renderer *renderer) {
@@ -229,10 +275,17 @@ void update_player(BlockType **map, int width, int height, Uint32 currentTime, S
                         printf("Player hit! Life points: %d\n", player.life_points);
                         if (player.life_points < 1) {
                             printf("Player died!\n");
+                            player.coin_count = 0;
                             display_game_over_menu(renderer); // Affiche le menu de game over
                             return;
                         }
                     }
+                }
+            } else if (map[i][j] == COIN) {
+                if (checkCollision(&player, &obs)) {
+                    map[i][j] = EMPTY; // La pièce disparaît
+                    player.coin_count++; // Incrémente le compteur de pièces
+                    printf("Coin collected! Total coins: %d\n", player.coin_count);
                 }
             }
         }
@@ -392,7 +445,7 @@ void start_game(SDL_Renderer *renderer) {
         return;
     }
 
-    int cameraX = 0;
+    int cameraX = player.x - WINDOW_WIDTH / 2;
     Uint32 lastTime = 0;
 
     while (!quit_game && !return_to_main_menu) {
@@ -419,8 +472,14 @@ void start_game(SDL_Renderer *renderer) {
 
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             SDL_RenderClear(renderer);
-
-            render_map(renderer, map, cameraX);
+            if(player.life_points > 0) {
+                render_map(renderer, map, cameraX);
+                render_coin_count(renderer, player.coin_count); // Affiche le compteur de pièces
+            } else {
+                display_game_over_menu(renderer);
+                render_map(renderer, map, WINDOW_WIDTH / 2);
+            }
+            
         } else {
             display_in_game_menu(renderer, &return_to_main_menu, &resume_game);
             if (resume_game) {
@@ -436,7 +495,8 @@ void start_game(SDL_Renderer *renderer) {
     if (return_to_main_menu) {
         return_to_main_menu = false;
         reset_map(&map);
-        reset_player_position(); // Réinitialise la position du joueur
+        reset_player(&player); // Réinitialise la vie du joueur
+        reset_camera_position(&cameraX); // Réinitialise la position de la caméra
         display_main_menu(renderer);
     } else {
         free_map(map);

@@ -29,7 +29,7 @@ bool load_block_textures(SDL_Renderer *renderer) {
         printf("Error loading background texture: %s\n", SDL_GetError());
     }
 
-    coin_texture = IMG_LoadTexture(renderer, "../assets/images/coin.gif");
+    coin_texture = IMG_LoadTexture(renderer, "../assets/images/sexwax.png");
     if (!coin_texture) {
         printf("Error loading coin texture: %s\n", SDL_GetError());
         return false;
@@ -176,6 +176,8 @@ void render_map(SDL_Renderer *renderer, Map *map, int cameraX) {
                     SDL_RenderCopy(renderer, brick_texture, NULL, &rect);
                     break;
                 case COIN:
+                    rect.w = TILE_SIZE * 2; // Augmenter la largeur de la pièce
+                    rect.h = TILE_SIZE * 2; // Augmenter la hauteur de la pièce
                     SDL_RenderCopy(renderer, coin_texture, NULL, &rect);
                     break;
                 case ENEMY:
