@@ -168,8 +168,22 @@ void free_map(Map *map) {
 }
 
 void render_map(SDL_Renderer *renderer, Map *map, int cameraX) {
-    SDL_Rect backgroundRect = {0, 0, 599 * TILE_SIZE, 202 * TILE_SIZE};
+    int window_width, window_height;
+    SDL_GetRendererOutputSize(renderer, &window_width, &window_height);
+
+    int background_width = window_width;
+    int background_height = window_height;
+    int background_x = -cameraX % background_width;
+    int background_y = 0; // Position verticale de l'image de fond
+
+    SDL_Rect backgroundRect = {background_x, background_y, background_width, background_height};
     SDL_RenderCopy(renderer, background_texture, NULL, &backgroundRect);
+
+    if (background_x + background_width < window_width) {
+        SDL_Rect backgroundRect2 = {background_x + background_width, background_y, background_width, background_height};
+        SDL_RenderCopy(renderer, background_texture, NULL, &backgroundRect2);
+    }
+
     for (int i = 0; i < map->height; ++i) {
         for (int j = 0; j < map->width; ++j) {
             SDL_Rect rect = { j * TILE_SIZE - cameraX, i * TILE_SIZE, TILE_SIZE, TILE_SIZE };
@@ -198,5 +212,5 @@ void reset_map(Map **map) {
     free_map(*map);
     *map = NULL;
     player.x = 5 * TILE_SIZE;
-    player.y = 10 * TILE_SIZE;
+    player.y = 20 * TILE_SIZE;
 }

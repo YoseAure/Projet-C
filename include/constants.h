@@ -8,7 +8,7 @@
 #define TILE_SIZE 30
 
 // Maps
-#define WORLD_WIDTH 9000
+#define WORLD_WIDTH 135000
 #define WORLD_HEIGHT 900
 
 typedef enum {
