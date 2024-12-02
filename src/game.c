@@ -11,7 +11,9 @@ Player player = {5 * TILE_SIZE,
                 TILE_SIZE * 2, 
                 false, 
                 0, 
-                0};
+                0,
+                 1,
+                 0}; // Initialisez last_hit_time à 0
 
 bool keys[SDL_NUM_SCANCODES] = {false};
 
@@ -32,7 +34,124 @@ void handle_input(SDL_Event *e) {
     }
 }
 
-void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
+void reset_player_position() {
+    player.x = 5 * TILE_SIZE;
+    player.y = 10 * TILE_SIZE;
+    player.life_points = 1; // Réinitialise la vie du joueur
+    player.last_hit_time = 0;
+    player.isJumping = false;
+    player.y_speed = 0;
+    // Réinitialiser l'inertie
+    memset(keys, 0, sizeof(keys));
+}
+
+void display_game_over_menu(SDL_Renderer *renderer) {
+    TTF_Font *font = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 32);
+    TTF_Font *font_large = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 36);
+    TTF_Font *title_font = TTF_OpenFont("assets/fonts/mario-font-2.ttf", 72);
+
+    if (!font || !title_font || !font_large) {
+        printf("Erreur TTF_OpenFont: %s\n", TTF_GetError());
+        return;
+    }
+
+    SDL_Color white = {255, 255, 255, 255};
+    SDL_Color yellow = {255, 255, 0, 255};
+
+    const char *options[] = {"Restart Game", "Main Menu", "Quit"};
+    int selected = 0;
+    bool quit = false;
+    bool return_to_main_menu = false;
+    SDL_Event event;
+
+    int window_width, window_height;
+    SDL_GetRendererOutputSize(renderer, &window_width, &window_height);
+
+    while (!quit) {
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                exit_program = true;
+                quit = true;
+            } else if (event.type == SDL_KEYDOWN) {
+                switch (event.key.keysym.sym) {
+                    case SDLK_UP:
+                        selected = (selected - 1 + 3) % 3;
+                        break;
+                    case SDLK_DOWN:
+                        selected = (selected + 1) % 3;
+                        break;
+                    case SDLK_RETURN:
+                        if (selected == 0) {
+                            quit = true;
+                            reset_player_position(); // Réinitialise la position et la vie du joueur
+                        } else if (selected == 1) {
+                            return_to_main_menu = true;
+                            quit = true;
+                        } else if (selected == 2) {
+                            exit_program = true;
+                            quit = true;
+                        }
+                        break;
+                    case SDLK_ESCAPE:
+                        exit_program = true;
+                        quit = true;
+                        break;
+                }
+            }
+        }
+
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
+
+        // titre : Game Over
+        SDL_Surface *title_surface = TTF_RenderText_Solid(title_font, "Game Over", white);
+        SDL_Texture *title_texture = SDL_CreateTextureFromSurface(renderer, title_surface);
+
+        int title_width = title_surface->w;
+        int title_height = title_surface->h;
+        int title_x = (window_width - title_width) / 2;
+        int title_y = (window_height / 4) - (title_height / 2);
+
+        SDL_Rect title_dest = {title_x, title_y, title_width, title_height};
+        SDL_RenderCopy(renderer, title_texture, NULL, &title_dest);
+
+        SDL_FreeSurface(title_surface);
+        SDL_DestroyTexture(title_texture);
+
+        // options
+        for (int i = 0; i < 3; ++i) {
+            SDL_Color color = (i == selected) ? yellow : white;
+            TTF_Font *current_font = (i == selected) ? font_large : font;
+
+            SDL_Surface *surface = TTF_RenderText_Solid(current_font, options[i], color);
+            SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+            int text_width = surface->w;
+            int text_height = surface->h;
+            int x = (window_width - text_width) / 2;
+            int y = (window_height / 2) + (i * (text_height + 20));
+
+            SDL_Rect dest = {x, y, text_width, text_height};
+            SDL_RenderCopy(renderer, texture, NULL, &dest);
+
+            SDL_FreeSurface(surface);
+            SDL_DestroyTexture(texture);
+        }
+
+        SDL_RenderPresent(renderer);
+    }
+
+    // Nettoyage
+    TTF_CloseFont(font);
+    TTF_CloseFont(font_large);
+    TTF_CloseFont(title_font);
+
+    if (return_to_main_menu) {
+        display_main_menu(renderer);
+    }
+}
+
+void update_player(BlockType **map, int width, int height, Uint32 currentTime, SDL_Renderer *renderer) {
     if (keys[SDL_SCANCODE_LEFT]) {
         bool canMove = true;
         for (int i = 0; i < height; ++i) {
@@ -89,8 +208,8 @@ void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
     bool onGround = false;
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
+            SDL_Rect obs = { j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE };
             if (map[i][j] == GROUND || map[i][j] == BRICK) {
-                SDL_Rect obs = { j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE };
                 if (checkCollision(&player, &obs)) {
                     if (player.y_speed > 0) {
                         player.y = obs.y - player.height;
@@ -100,6 +219,19 @@ void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
                     if (player.y_speed < 0) {
                         player.y = obs.y + obs.h;
                         player.y_speed = 0;
+                    }
+                }
+            } else if (map[i][j] == ENEMY) {
+                if (checkCollision(&player, &obs)) {
+                    if (currentTime - player.last_hit_time > 1000) { // 1 seconde d'invulnérabilité
+                        player.life_points -= 1;
+                        player.last_hit_time = currentTime;
+                        printf("Player hit! Life points: %d\n", player.life_points);
+                        if (player.life_points < 1) {
+                            printf("Player died!\n");
+                            display_game_over_menu(renderer); // Affiche le menu de game over
+                            return;
+                        }
                     }
                 }
             }
@@ -277,7 +409,7 @@ void start_game(SDL_Renderer *renderer) {
         }
 
         if (!in_game_menu) {
-            update_player(map->blocks, map->width, map->height, currentTime);
+            update_player(map->blocks, map->width, map->height, currentTime, renderer);
 
             if (player.x > cameraX + WINDOW_WIDTH / 2 && cameraX + WINDOW_WIDTH < WORLD_WIDTH) {
                 cameraX += SCROLL_SPEED;
@@ -304,6 +436,7 @@ void start_game(SDL_Renderer *renderer) {
     if (return_to_main_menu) {
         return_to_main_menu = false;
         reset_map(&map);
+        reset_player_position(); // Réinitialise la position du joueur
         display_main_menu(renderer);
     } else {
         free_map(map);

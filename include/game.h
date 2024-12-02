@@ -10,6 +10,8 @@ typedef struct {
     bool isJumping;
     int y_speed;
     Uint32 lastJump_t;
+    int life_points;
+    Uint32 last_hit_time; // Ajoutez ce champ
 } Player;
 
 void start_game(SDL_Renderer *renderer);
