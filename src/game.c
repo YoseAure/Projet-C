@@ -20,8 +20,8 @@ int previous_mouvement = 24;
 Uint32 last_frame_time = 0;
 const Uint32 FRAME_DELAY = 100;
 
-bool mario_gameType = false;
-bool pokemon_gameType = true;
+bool mario_gameType = true;
+bool pokemon_gameType = false;
 
 Player player;
 
@@ -50,6 +50,12 @@ void reset_game_state() {
         mobs[i].animation_row = 0;
         mobs[i].texture = NULL;
         mobs[i].current_frame = 0;
+    }
+}
+
+void reset_keys() {
+    for (int i = 0; i < SDL_NUM_SCANCODES; ++i) {
+    keys[i] = false;
     }
 }
 
@@ -201,6 +207,28 @@ void update_player(Block **map, int width, int height, Uint32 currentTime) {
                         }
                     }
                 }
+                SDL_Rect obs = { map[i][j].x, map[i][j].y, map[i][j].width, map[i][j].height };
+                if (map[i][j].type == ENEMY && checkCollision(&player, &obs)) {
+                    if (currentTime - player.lastHit_t >= 1000) {
+                        player.lastHit_t = currentTime;
+                        player.life_points--;
+                    }
+                } else if (map[i][j].type == COIN && checkCollision(&player, &obs)) {
+                    player.coins_count++;
+                    map[i][j].type = EMPTY;
+                }
+            }
+        }
+
+        for (int i = 0; i < mob_count; i++) {
+            if (mobs[i].type != PRINCESS) {
+                SDL_Rect mob_rect = { mobs[i].x, mobs[i].y, mobs[i].width, mobs[i].height };
+                if (checkCollision(&player, &mob_rect)) {
+                    if (currentTime - player.lastHit_t >= 1000) {
+                        player.lastHit_t = currentTime;
+                        player.life_points--;
+                    }
+                }
             }
         }
 
@@ -282,6 +310,8 @@ void render_mobs(SDL_Renderer *renderer, int cameraX) {
         switch (mobs[i].type) {
             case DRAGON:
                 mob_rect = (SDL_Rect){mobs[i].x - cameraX, mobs[i].y, mobs[i].width, mobs[i].height};
+                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Noir
+                SDL_RenderFillRect(renderer, &mob_rect);
                 if (mobs[i].direction == 0) {
                     SDL_RenderCopyEx(renderer, mobs[i].texture, &mobs[i].clips[mobs[i].animation_row][mobs[i].current_frame], &mob_rect, 0, NULL, SDL_FLIP_HORIZONTAL);
                 } else {
@@ -301,7 +331,40 @@ void render_mobs(SDL_Renderer *renderer, int cameraX) {
     }
 }
 
-void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu, bool *resume_game) {
+void render_coin_count(SDL_Renderer *renderer, Player *player) {
+    
+    // ToDo : centraliser le chargement des polices ??
+
+    TTF_Font *font = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 24);
+    if (!font) {
+        printf("Erreur TTF_OpenFont: %s\n", TTF_GetError());
+        return;
+    }
+
+    SDL_Color white = {255, 255, 255, 255};
+    char coin_text[20];
+    sprintf(coin_text, "Sexwax: %d", player->coins_count);
+
+    SDL_Surface *surface = TTF_RenderText_Solid(font, coin_text, white);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+    int text_width = surface->w;
+    int text_height = surface->h;
+    SDL_Rect dest = {WINDOW_WIDTH - text_width - 10, 10, text_width, text_height};
+
+    SDL_Rect background_rect = {dest.x - 5, dest.y - 5, text_width + 10, text_height + 10};
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // noir
+    SDL_RenderFillRect(renderer, &background_rect);
+
+    SDL_RenderCopy(renderer, texture, NULL, &dest);
+
+    // vraiment besoin de libérer en boucle ??
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
+    TTF_CloseFont(font);
+}
+
+void display_in_game_menu(SDL_Renderer *renderer, Player *player, bool *return_to_main_menu, bool *quit_game , bool *resume_game) {
     TTF_Font *font = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 32);
     TTF_Font *font_large = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 36);
     TTF_Font *title_font = TTF_OpenFont("assets/fonts/mario-font-2.ttf", 72);
@@ -314,7 +377,24 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu, boo
     SDL_Color white = {255, 255, 255, 255};
     SDL_Color yellow = {255, 255, 0, 255};
 
-    const char *options[] = {"Resume Game", "Main Menu", "Settings"};
+    // const char *options[3];
+    // if (strcmp(title, "Game Paused") == 0) {
+    //     const char *options[] = {"Resume Game", "Main Menu", "Settings"};
+    // } else {
+    //     const char *options[] = {"Restart Game", "Main Menu", "Quit"};
+    // }
+
+    const char *options[3];
+    if (player->life_points > 0) {
+        options[0] = "Resume Game";
+        options[1] = "Main Menu";
+        options[2] = "Settings";
+    } else {
+        options[0] = "Restart Game";
+        options[1] = "Main Menu";
+        options[2] = "Quit";
+    }
+
     int selected = 0;
     bool quit = false;
     SDL_Event event;
@@ -358,17 +438,31 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu, boo
                         break;
                     case SDLK_RETURN:
                         if (selected == 0) {
-                            *resume_game = true;
-                            quit = true;
+                            if (player->life_points > 0) {
+                                *resume_game = true;
+                                reset_keys();
+                                quit = true;
+                            } else {
+                                start_game(renderer);
+                                quit = true;
+                            }
                         } else if (selected == 1) {
                             *return_to_main_menu = true;
                             quit = true;
                         } else if (selected == 2) {
-                            settings(renderer);
+                            if (player->life_points > 0) {
+                                settings(renderer);
+                            } else {
+                                *return_to_main_menu = true;
+                                *quit_game = true;
+                                exit_program = true;
+                                quit = true;
+                            }
                         }
                         break;
                     case SDLK_ESCAPE:
                         *resume_game = true;
+                        reset_keys();
                         quit = true;
                         break;
                 }
@@ -378,8 +472,7 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu, boo
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        // titre : Game Paused
-        SDL_Surface *title_surface = TTF_RenderText_Solid(title_font, "Game Paused", white);
+        SDL_Surface *title_surface = TTF_RenderText_Solid(title_font, player->life_points > 0 ? "Game Paused" : "Game Over" , white);
         SDL_Texture *title_texture = SDL_CreateTextureFromSurface(renderer, title_surface);
 
         int title_width = title_surface->w;
@@ -468,6 +561,7 @@ void start_game(SDL_Renderer *renderer) {
     }
 
     reset_game_state();
+    reset_keys();
 
     Map *map = load_map("assets/maps/map-1.0.txt");
     if (!map) {
@@ -475,7 +569,7 @@ void start_game(SDL_Renderer *renderer) {
         return;
     }
 
-    player.texture = loadTexture("assets/sprites/naked-player.png", renderer);
+    player.texture = loadTexture("assets/sprites/surfer-player.png", renderer);
     if (!player.texture) {
         printf("Erreur lors du chargement de la texture du joueur: %s\n", SDL_GetError());
         return;
@@ -516,7 +610,7 @@ void start_game(SDL_Renderer *renderer) {
 
         if (!in_game_menu) {
             update_player(map->blocks, map->width, map->height, currentTime);
-            update_mobs(currentTime); // Appel de la fonction pour mettre à jour les mobs
+            update_mobs(currentTime);
             animate_mobs(map->width, map->height, currentTime);
 
             if (player.x > cameraX + WINDOW_WIDTH / 2 && cameraX + WINDOW_WIDTH < WORLD_WIDTH) {
@@ -528,14 +622,20 @@ void start_game(SDL_Renderer *renderer) {
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             SDL_RenderClear(renderer);
 
-            render_map(renderer, map, cameraX);
-            render_player(renderer, cameraX);
-            render_mobs(renderer, cameraX);
+            if (player.life_points > 0) {
+                render_map(renderer, map, cameraX);
+                render_player(renderer, cameraX);
+                render_mobs(renderer, cameraX);
+                render_coin_count(renderer, &player);
+            } else {
+                display_in_game_menu(renderer, &player, &return_to_main_menu, &quit_game, &resume_game);
+            }
         } else {
-            display_in_game_menu(renderer, &return_to_main_menu, &resume_game);
+            display_in_game_menu(renderer, &player, &return_to_main_menu, &quit_game, &resume_game);
             if (resume_game) {
                 in_game_menu = false;
                 resume_game = false;
+
             }
         }
 

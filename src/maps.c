@@ -56,7 +56,7 @@ bool load_block_textures(SDL_Renderer *renderer) {
         printf("Error loading background texture: %s\n", SDL_GetError());
     }
 
-    coin_texture = IMG_LoadTexture(renderer, "../assets/images/coin.gif");
+    coin_texture = IMG_LoadTexture(renderer, "../assets/images/sexwax.png");
     if (!coin_texture) {
         printf("Error loading coin texture: %s\n", SDL_GetError());
         return false;
@@ -283,6 +283,9 @@ Map* load_map(const char *filename) {
                     player.isJumping = false;
                     player.y_speed = 0;
                     player.lastJump_t = 0;
+                    player.lastHit_t = 0;
+                    player.life_points = 1;
+                    player.coins_count = 0;
                     player.animation_row = IDLE;
                     player.texture = player_texture;
                     getSpriteClips(player.clips, PLAYER_SPRITE_ROWS, PLAYER_SPRITE_COLS, PLAYER_SPRITE_FRAME_WIDTH, PLAYER_SPRITE_FRAME_HEIGHT);
@@ -308,6 +311,8 @@ Map* load_map(const char *filename) {
                     map->blocks[row][col].isSolid = true;
                     break;
                 case 'C':
+                    map->blocks[row][col].width = TILE_SIZE * 2;
+                    map->blocks[row][col].height = TILE_SIZE * 2;
                     map->blocks[row][col].type = COIN;
                     map->blocks[row][col].isSolid = false;
                     break;

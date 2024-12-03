@@ -18,9 +18,12 @@ typedef struct {
 
 typedef struct {
     int x, y, width, height;
+    int life_points;
+    int coins_count;
     bool isJumping;
     int y_speed;
     Uint32 lastJump_t;
+    Uint32 lastHit_t;
     int animation_row;
     SDL_Texture *texture;
     SDL_Rect clips[MAX_SPRITE_ROWS][MAX_SPRITE_COLS];
