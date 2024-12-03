@@ -25,18 +25,6 @@ bool pokemon_gameType = false;
 
 Player player;
 
-// Player player = {300 * TILE_SIZE,                                  // x
-//                  20 * TILE_SIZE,                                   // y
-//                  TILE_SIZE,                                        // width
-//                  TILE_SIZE * 1.5,                                  // height
-//                  false,                                            // isJumping
-//                  0,                                                // y_speed
-//                  0,                                                // lastJump_t
-//                  IDLE,                                             // animation_row
-//                  NULL,                                             // texture
-//                  {{0}},                                            // clips
-//                  0};                                               // current_frame
-
 bool keys[SDL_NUM_SCANCODES] = {false};
 
 void reset_game_state() {
@@ -377,13 +365,6 @@ void display_in_game_menu(SDL_Renderer *renderer, Player *player, bool *return_t
     SDL_Color white = {255, 255, 255, 255};
     SDL_Color yellow = {255, 255, 0, 255};
 
-    // const char *options[3];
-    // if (strcmp(title, "Game Paused") == 0) {
-    //     const char *options[] = {"Resume Game", "Main Menu", "Settings"};
-    // } else {
-    //     const char *options[] = {"Restart Game", "Main Menu", "Quit"};
-    // }
-
     const char *options[3];
     if (player->life_points > 0) {
         options[0] = "Resume Game";
@@ -574,23 +555,6 @@ void start_game(SDL_Renderer *renderer) {
         printf("Erreur lors du chargement de la texture du joueur: %s\n", SDL_GetError());
         return;
     }
-    // getSpriteClips(player.clips, PLAYER_SPRITE_ROWS, PLAYER_SPRITE_COLS, PLAYER_SPRITE_FRAME_WIDTH, PLAYER_SPRITE_FRAME_HEIGHT);
-    // getSpriteClips(dragon_clips, DRAGON_SPRITE_ROWS, DRAGON_SPRITE_COLS, DRAGON_SPRITE_FRAME_WIDTH, DRAGON_SPRITE_FRAME_HEIGHT);
-
-    // for (int i = 0; i < mob_count; i++) {
-    //     switch (mobs[i].type) {
-    //         case DRAGON:
-    //             mobs[i].texture = dragon_texture;
-    //             getSpriteClips(mobs[i].clips, DRAGON_SPRITE_ROWS, DRAGON_SPRITE_COLS, DRAGON_SPRITE_FRAME_WIDTH, DRAGON_SPRITE_FRAME_HEIGHT);
-    //             break;
-    //         case PRINCESS:
-    //             mobs[i].texture = princess_texture;
-    //             getSpriteClips(mobs[i].clips, PLAYER_SPRITE_ROWS, PLAYER_SPRITE_COLS, PLAYER_SPRITE_FRAME_WIDTH, PLAYER_SPRITE_FRAME_HEIGHT);
-    //             break;
-    //         default:
-    //             break;
-    //     }
-    // }
 
     int cameraX = player.x - WINDOW_WIDTH / 2;
 
