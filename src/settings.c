@@ -3,7 +3,7 @@
 
 extern bool exit_program;
 
-bool music_enabled = true;
+bool music_enabled = false;
 bool sound_effects_enabled = true;
 
 void settings(SDL_Renderer *renderer) {

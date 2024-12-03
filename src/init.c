@@ -1,5 +1,7 @@
 #include "../include/init.h"
 
+extern bool music_enabled;
+
 bool init_sdl(SDL_Window **window, SDL_Renderer **renderer, Mix_Music **background_music) {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
         printf("Erreur SDL_Init: %s\n", SDL_GetError());
@@ -28,7 +30,9 @@ bool init_sdl(SDL_Window **window, SDL_Renderer **renderer, Mix_Music **backgrou
         return false;
     }
 
-    Mix_PlayMusic(*background_music, -1);
+    if (music_enabled) {
+        Mix_PlayMusic(*background_music, -1);
+    }
 
     SDL_DisplayMode display_mode;
     if (SDL_GetCurrentDisplayMode(0, &display_mode) != 0) {
