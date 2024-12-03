@@ -1,30 +1,57 @@
 #include "../include/game.h"
-#include "../include/menu.h"
-#include "../include/settings.h"
-#include "../include/maps.h"
-#include "../include/sprite.h"
 
 extern bool exit_program;
 extern SDL_Texture *player_texture;
-SDL_Rect player_clips[SPRITE_ROWS][SPRITE_COLS];
+extern SDL_Texture *dragon_texture;
+extern SDL_Texture *princess_texture;
+SDL_Rect player_clips[MAX_SPRITE_ROWS][MAX_SPRITE_COLS];
+SDL_Rect dragon_clips[MAX_SPRITE_ROWS][MAX_SPRITE_COLS];
+SDL_Rect princess_clips[MAX_SPRITE_ROWS][MAX_SPRITE_COLS];
+
+Mob mobs[MAX_MOBS];
+int mob_count = 0;
+
 int current_frame = 0;
+int current_dragon_frame = 0;
+int current_princess_frame = 0;
+
 int animation_row = 24;
 int previous_mouvement = 24;
 Uint32 last_frame_time = 0;
 const Uint32 FRAME_DELAY = 100;
 
-bool mario_gameType = true;
-bool pokemon_gameType = false;
+bool mario_gameType = false;
+bool pokemon_gameType = true;
 
-Player player = {5 * TILE_SIZE,
-                20 * TILE_SIZE, 
-                TILE_SIZE, 
-                TILE_SIZE * 1.5, 
-                false, 
-                0, 
-                0};
+Player player;
+
+// Player player = {300 * TILE_SIZE,                                  // x
+//                  20 * TILE_SIZE,                                   // y
+//                  TILE_SIZE,                                        // width
+//                  TILE_SIZE * 1.5,                                  // height
+//                  false,                                            // isJumping
+//                  0,                                                // y_speed
+//                  0,                                                // lastJump_t
+//                  IDLE,                                             // animation_row
+//                  NULL,                                             // texture
+//                  {{0}},                                            // clips
+//                  0};                                               // current_frame
 
 bool keys[SDL_NUM_SCANCODES] = {false};
+
+void reset_game_state() {
+    mob_count = 0;
+    for (int i = 0; i < MAX_MOBS; i++) {
+        mobs[i].x = 0;
+        mobs[i].y = 0;
+        mobs[i].width = 0;
+        mobs[i].height = 0;
+        mobs[i].type = 0;
+        mobs[i].animation_row = 0;
+        mobs[i].texture = NULL;
+        mobs[i].current_frame = 0;
+    }
+}
 
 bool checkCollision(Player *player, SDL_Rect *obs) {
     if (player->x + player->width > obs->x && player->x < obs->x + obs->w) {
@@ -43,16 +70,21 @@ void handle_input(SDL_Event *e) {
     }
 }
 
-void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
+void update_player(Block **map, int width, int height, Uint32 currentTime) {
     bool moving = false;
-    // animation_row = IDLE;
+
+    if (mario_gameType && !pokemon_gameType) {
+        player.height = TILE_SIZE * 1.5;
+    } else if (pokemon_gameType && !mario_gameType) {
+        player.height = TILE_SIZE;
+    }
 
     if (keys[SDL_SCANCODE_LEFT]) {
         bool canMove = true;
         for (int i = 0; i < height; ++i) {
             for (int j = 0; j < width; ++j) {
-                if (map[i][j] == BRICK || map[i][j] == GROUND) {
-                    SDL_Rect obs = { j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+                if (map[i][j].isSolid) {
+                    SDL_Rect obs = { map[i][j].x, map[i][j].y, map[i][j].width, map[i][j].height };
                     if (player.x - MOVEMENT_SPEED < obs.x + obs.w &&
                         player.x + player.width - MOVEMENT_SPEED > obs.x &&
                         player.y + player.height > obs.y && player.y < obs.y + obs.h) {
@@ -64,7 +96,7 @@ void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
         }
         if (canMove && player.x > 0) {
             player.x -= MOVEMENT_SPEED;
-            animation_row = LEFT;
+            player.animation_row = LEFT;
             moving = true;
         }
     }
@@ -73,8 +105,8 @@ void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
         bool canMove = true;
         for (int i = 0; i < height; ++i) {
             for (int j = 0; j < width; ++j) {
-                if (map[i][j] == BRICK || map[i][j] == GROUND) {
-                    SDL_Rect obs = { j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+                if (map[i][j].isSolid) {
+                    SDL_Rect obs = { map[i][j].x, map[i][j].y, map[i][j].width, map[i][j].height };
                     if (player.x + player.width + MOVEMENT_SPEED > obs.x &&
                         player.x + MOVEMENT_SPEED < obs.x + obs.w &&
                         player.y + player.height > obs.y && player.y < obs.y + obs.h) {
@@ -86,7 +118,7 @@ void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
         }
         if (canMove && player.x + player.width < width * TILE_SIZE) {
             player.x += MOVEMENT_SPEED;
-            animation_row = RIGHT;
+            player.animation_row = RIGHT;
             moving = true;
         }
     }
@@ -96,8 +128,8 @@ void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
             bool canMove = true;
             for (int i = 0; i < height; ++i) {
                 for (int j = 0; j < width; ++j) {
-                    if (map[i][j] == BRICK || map[i][j] == GROUND) {
-                        SDL_Rect obs = { j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+                    if (map[i][j].isSolid) {
+                        SDL_Rect obs = { map[i][j].x, map[i][j].y, map[i][j].width, map[i][j].height };
                         if (player.y - MOVEMENT_SPEED < obs.y + obs.h &&
                             player.y + player.height - MOVEMENT_SPEED > obs.y &&
                             player.x + player.width > obs.x && player.x < obs.x + obs.w) {
@@ -109,7 +141,7 @@ void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
             }
             if (canMove && player.y > 0) {
                 player.y -= MOVEMENT_SPEED;
-                animation_row = UP;
+                player.animation_row = UP;
                 moving = true;
             }
         }
@@ -118,8 +150,8 @@ void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
             bool canMove = true;
             for (int i = 0; i < height; ++i) {
                 for (int j = 0; j < width; ++j) {
-                    if (map[i][j] == BRICK || map[i][j] == GROUND) {
-                        SDL_Rect obs = { j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+                    if (map[i][j].isSolid) {
+                        SDL_Rect obs = { map[i][j].x, map[i][j].y, map[i][j].width, map[i][j].height };
                         if (player.y + player.height + MOVEMENT_SPEED > obs.y &&
                             player.y + MOVEMENT_SPEED < obs.y + obs.h &&
                             player.x + player.width > obs.x && player.x < obs.x + obs.w) {
@@ -131,7 +163,7 @@ void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
             }
             if (canMove && player.y + player.height < height * TILE_SIZE) {
                 player.y += MOVEMENT_SPEED;
-                animation_row = DOWN;
+                player.animation_row = DOWN;
                 moving = true;
             }
         }
@@ -143,7 +175,7 @@ void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
                 player.y_speed = JUMP_FORCE;
                 player.isJumping = true;
                 player.lastJump_t = currentTime;
-                animation_row = JUMP;
+                player.animation_row = JUMP;
             }
         }
 
@@ -155,8 +187,8 @@ void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
         bool onGround = false;
         for (int i = 0; i < height; ++i) {
             for (int j = 0; j < width; ++j) {
-                if (map[i][j] == GROUND || map[i][j] == BRICK) {
-                    SDL_Rect obs = { j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE };
+                if (map[i][j].isSolid) {
+                    SDL_Rect obs = { map[i][j].x, map[i][j].y, map[i][j].width, map[i][j].height };
                     if (checkCollision(&player, &obs)) {
                         if (player.y_speed > 0) {
                             player.y = obs.y - player.height;
@@ -182,55 +214,91 @@ void update_player(BlockType **map, int width, int height, Uint32 currentTime) {
 
     if (!moving && !player.isJumping) {
         if (previous_mouvement == LEFT || previous_mouvement == IDLE_LEFT) {
-            animation_row = IDLE_LEFT;
+            player.animation_row = IDLE_LEFT;
         } else if (previous_mouvement == RIGHT || previous_mouvement == IDLE_RIGHT) {
-            animation_row = IDLE_RIGHT;
+            player.animation_row = IDLE_RIGHT;
         } else if (previous_mouvement == UP || previous_mouvement == IDLE_UP) {
-            animation_row = IDLE_UP;
+            player.animation_row = IDLE_UP;
         } else {
-            animation_row = IDLE;
+            player.animation_row = IDLE;
         }
     }
-    //     FRAME_DELAY = 100;
-    // } else {
-    //     FRAME_DELAY = 100;
-    // }
 
-    // Animation du perso
     if (currentTime - last_frame_time >= FRAME_DELAY) {
-        switch (animation_row) {
+        switch (player.animation_row) {
             case JUMP:
-                current_frame = (current_frame + 1) % 4;
+                player.current_frame = (player.current_frame + 1) % 4;
                 break;
             case LEFT:
             case RIGHT:
             case UP:
             case DOWN:
-                current_frame = (current_frame + 1) % 7;
+                player.current_frame = (player.current_frame + 1) % 7;
                 break;
             case IDLE:
             case IDLE_RIGHT:
             case IDLE_LEFT:
             case IDLE_UP:
-                current_frame = (current_frame + 1) % 2;
+                player.current_frame = (player.current_frame + 1) % 2;
                 break;
             default:
-                animation_row = IDLE;
-                current_frame = (current_frame + 1) % 2;
+                player.animation_row = IDLE;
+                player.current_frame = (player.current_frame + 1) % 2;
                 break;
         }
         last_frame_time = currentTime;
-        previous_mouvement = animation_row;
+        previous_mouvement = player.animation_row;
+    }
+}
+
+void animate_mobs(int width, int height, Uint32 currentTime) {
+    static Uint32 last_mob_frame_time = 0;
+    if (currentTime - last_mob_frame_time >= FRAME_DELAY) {
+        for (int i = 0; i < mob_count; i++) {
+            switch (mobs[i].type) {
+                case DRAGON:
+                    mobs[i].current_frame = (mobs[i].current_frame + 1) % DRAGON_SPRITE_COLS;
+                    break;
+                case PRINCESS:
+                    mobs[i].current_frame = (mobs[i].current_frame + 1) % 1 + 5;
+                    break;
+                default:
+                    break;
+            }
+        }
+        last_mob_frame_time = currentTime;
     }
 }
 
 void render_player(SDL_Renderer *renderer, int cameraX) {
-    // SDL_Rect player_rect = { player.x - cameraX, player.y, player.width, player.height };
-    // SDL_SetRenderDrawColor(renderer, 0, 0, 139, 255); // Bleu foncé
-    // SDL_RenderFillRect(renderer, &player_rect);
+    SDL_Rect sprite_rect = { player.x - cameraX + (player.width - PLAYER_SPRITE_FRAME_WIDTH) / 2, player.y - (PLAYER_SPRITE_FRAME_HEIGHT - player.height) + 2, PLAYER_SPRITE_FRAME_WIDTH, PLAYER_SPRITE_FRAME_HEIGHT };
+    SDL_RenderCopy(renderer, player.texture, &player.clips[player.animation_row][player.current_frame], &sprite_rect);
+}
 
-    SDL_Rect sprite_rect = { player.x - cameraX + (player.width - SPRITE_WIDTH) / 2, player.y - (SPRITE_HEIGHT - player.height) + 2, SPRITE_WIDTH, SPRITE_HEIGHT };
-    SDL_RenderCopy(renderer, player_texture, &player_clips[animation_row][current_frame], &sprite_rect);
+void render_mobs(SDL_Renderer *renderer, int cameraX) {
+    for (int i = 0; i < mob_count; i++) {
+        SDL_Rect mob_rect;
+
+        switch (mobs[i].type) {
+            case DRAGON:
+                mob_rect = (SDL_Rect){mobs[i].x - cameraX, mobs[i].y, mobs[i].width, mobs[i].height};
+                if (mobs[i].direction == 0) {
+                    SDL_RenderCopyEx(renderer, mobs[i].texture, &mobs[i].clips[mobs[i].animation_row][mobs[i].current_frame], &mob_rect, 0, NULL, SDL_FLIP_HORIZONTAL);
+                } else {
+                    SDL_RenderCopy(renderer, mobs[i].texture, &mobs[i].clips[mobs[i].animation_row][mobs[i].current_frame], &mob_rect);
+                }
+                break;
+            case PRINCESS:
+                mob_rect = (SDL_Rect){mobs[i].x - cameraX + (mobs[i].width - PLAYER_SPRITE_FRAME_WIDTH) / 2, mobs[i].y - (PLAYER_SPRITE_FRAME_HEIGHT - mobs[i].height) - 5, PLAYER_SPRITE_FRAME_WIDTH, PLAYER_SPRITE_FRAME_HEIGHT};
+                SDL_Rect princess_background_rect = {mob_rect.x, mob_rect.y, mob_rect.w, mob_rect.h};
+                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Noir
+                SDL_RenderFillRect(renderer, &princess_background_rect);
+                SDL_RenderCopy(renderer, mobs[i].texture, &mobs[i].clips[mobs[i].animation_row][mobs[i].current_frame], &mob_rect);
+                break;
+            default:
+                break;
+        }
+    }
 }
 
 void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu, bool *resume_game) {
@@ -360,6 +428,32 @@ void display_in_game_menu(SDL_Renderer *renderer, bool *return_to_main_menu, boo
     TTF_CloseFont(title_font);
 }
 
+void update_mobs(Uint32 currentTime) {
+    static Uint32 last_mob_update_time = 0;
+    if (currentTime - last_mob_update_time >= FRAME_DELAY) {
+        for (int i = 0; i < mob_count; i++) {
+            switch (mobs[i].type) {
+                case DRAGON:
+                    if (mobs[i].direction == 0) {
+                        mobs[i].x += DRAGON_SPEED;
+                        if (mobs[i].x >= mobs[i].initial_x + 20 * TILE_SIZE) {
+                            mobs[i].direction = 1;
+                        }
+                    } else {
+                        mobs[i].x -= DRAGON_SPEED;
+                        if (mobs[i].x <= mobs[i].initial_x - 20 * TILE_SIZE) {
+                            mobs[i].direction = 0;
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        last_mob_update_time = currentTime;
+    }
+}
+
 void start_game(SDL_Renderer *renderer) {
     bool quit_game = false;
     bool return_to_main_menu = false;
@@ -373,27 +467,45 @@ void start_game(SDL_Renderer *renderer) {
         return;
     }
 
+    reset_game_state();
+
     Map *map = load_map("assets/maps/map-1.0.txt");
     if (!map) {
         printf("Erreur lors du chargement de la carte\n");
         return;
     }
 
-    player_texture = loadTexture("assets/sprites/naked-player.png", renderer);
-    if (!player_texture) {
+    player.texture = loadTexture("assets/sprites/naked-player.png", renderer);
+    if (!player.texture) {
         printf("Erreur lors du chargement de la texture du joueur: %s\n", SDL_GetError());
         return;
     }
-    getSpriteClips(player_clips, SPRITE_ROWS, SPRITE_COLS);
+    // getSpriteClips(player.clips, PLAYER_SPRITE_ROWS, PLAYER_SPRITE_COLS, PLAYER_SPRITE_FRAME_WIDTH, PLAYER_SPRITE_FRAME_HEIGHT);
+    // getSpriteClips(dragon_clips, DRAGON_SPRITE_ROWS, DRAGON_SPRITE_COLS, DRAGON_SPRITE_FRAME_WIDTH, DRAGON_SPRITE_FRAME_HEIGHT);
 
-    int cameraX = 0;
-    Uint32 lastTime = 0;
+    // for (int i = 0; i < mob_count; i++) {
+    //     switch (mobs[i].type) {
+    //         case DRAGON:
+    //             mobs[i].texture = dragon_texture;
+    //             getSpriteClips(mobs[i].clips, DRAGON_SPRITE_ROWS, DRAGON_SPRITE_COLS, DRAGON_SPRITE_FRAME_WIDTH, DRAGON_SPRITE_FRAME_HEIGHT);
+    //             break;
+    //         case PRINCESS:
+    //             mobs[i].texture = princess_texture;
+    //             getSpriteClips(mobs[i].clips, PLAYER_SPRITE_ROWS, PLAYER_SPRITE_COLS, PLAYER_SPRITE_FRAME_WIDTH, PLAYER_SPRITE_FRAME_HEIGHT);
+    //             break;
+    //         default:
+    //             break;
+    //     }
+    // }
+
+    int cameraX = player.x - WINDOW_WIDTH / 2;
 
     while (!quit_game && !return_to_main_menu) {
         Uint32 currentTime = SDL_GetTicks();
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 quit_game = true;
+                return_to_main_menu = true;
             } else if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
                 handle_input(&event);
                 if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
@@ -404,6 +516,8 @@ void start_game(SDL_Renderer *renderer) {
 
         if (!in_game_menu) {
             update_player(map->blocks, map->width, map->height, currentTime);
+            update_mobs(currentTime); // Appel de la fonction pour mettre à jour les mobs
+            animate_mobs(map->width, map->height, currentTime);
 
             if (player.x > cameraX + WINDOW_WIDTH / 2 && cameraX + WINDOW_WIDTH < WORLD_WIDTH) {
                 cameraX += SCROLL_SPEED;
@@ -416,6 +530,7 @@ void start_game(SDL_Renderer *renderer) {
 
             render_map(renderer, map, cameraX);
             render_player(renderer, cameraX);
+            render_mobs(renderer, cameraX);
         } else {
             display_in_game_menu(renderer, &return_to_main_menu, &resume_game);
             if (resume_game) {
