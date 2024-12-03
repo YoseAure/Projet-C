@@ -298,8 +298,8 @@ void render_mobs(SDL_Renderer *renderer, int cameraX) {
         switch (mobs[i].type) {
             case DRAGON:
                 mob_rect = (SDL_Rect){mobs[i].x - cameraX, mobs[i].y, mobs[i].width, mobs[i].height};
-                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Noir
-                SDL_RenderFillRect(renderer, &mob_rect);
+                // SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Noir
+                // SDL_RenderFillRect(renderer, &mob_rect);
                 if (mobs[i].direction == 0) {
                     SDL_RenderCopyEx(renderer, mobs[i].texture, &mobs[i].clips[mobs[i].animation_row][mobs[i].current_frame], &mob_rect, 0, NULL, SDL_FLIP_HORIZONTAL);
                 } else {
