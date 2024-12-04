@@ -12,7 +12,8 @@
 
 void start_game(SDL_Renderer *renderer);
 void display_in_game_menu(SDL_Renderer *renderer, Player *player, bool *return_to_main_menu, bool *quit_game, bool *resume_game);
-void render_player(SDL_Renderer *renderer, int cameraX);
+void render_player(SDL_Renderer *renderer, int cameraX, int cameraY);
+void render_mobs(SDL_Renderer *renderer, int cameraX, int cameraY);
 void animate_mobs(int width, int height, Uint32 currentTime);
 void update_mobs(Uint32 currentTime);
 
