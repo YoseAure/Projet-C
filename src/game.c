@@ -314,6 +314,12 @@ void render_mobs(SDL_Renderer *renderer, int cameraX, int cameraY) {
                 SDL_RenderFillRect(renderer, &princess_background_rect);
                 SDL_RenderCopy(renderer, mobs[i].texture, &mobs[i].clips[mobs[i].animation_row][mobs[i].current_frame], &mob_rect);
                 break;
+            case PESTYFLORE:
+                mob_rect = (SDL_Rect){mobs[i].x - cameraX, mobs[i].y - cameraY - TILE_SIZE, mobs[i].width * 2, mobs[i].height * 2};
+                // SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Rouge
+                // SDL_RenderFillRect(renderer, &mob_rect);
+                SDL_RenderCopy(renderer, mobs[i].texture, NULL, &mob_rect);
+                break;
             default:
                 break;
         }
@@ -365,14 +371,28 @@ void render_player_life(SDL_Renderer *renderer, Player *player) {
     SDL_Texture *heart_texture = SDL_CreateTextureFromSurface(renderer, heart_surface);
     SDL_FreeSurface(heart_surface);
 
+    SDL_Surface *grey_heart_surface = IMG_Load("assets/images/grey-heart.png");
+    if (!grey_heart_surface) {
+        printf("Erreur IMG_Load: %s\n", IMG_GetError());
+        SDL_DestroyTexture(heart_texture);
+        return;
+    }
+    SDL_Texture *grey_heart_texture = SDL_CreateTextureFromSurface(renderer, grey_heart_surface);
+    SDL_FreeSurface(grey_heart_surface);
+
     int heart_width = TILE_SIZE;
     int heart_height = TILE_SIZE;
-    for (int i = 0; i < player->life_points; ++i) {
+    for (int i = 0; i < player->total_life_points; ++i) {
         SDL_Rect heart_rect = {10 + i * (heart_width + 5), 10, heart_width, heart_height};
-        SDL_RenderCopy(renderer, heart_texture, NULL, &heart_rect);
+        if (i < player->life_points) {
+            SDL_RenderCopy(renderer, heart_texture, NULL, &heart_rect);
+        } else {
+            SDL_RenderCopy(renderer, grey_heart_texture, NULL, &heart_rect);
+        }
     }
 
     SDL_DestroyTexture(heart_texture);
+    SDL_DestroyTexture(grey_heart_texture);
 }
 
 void display_in_game_menu(SDL_Renderer *renderer, Player *player, bool *return_to_main_menu, bool *quit_game , bool *resume_game) {
