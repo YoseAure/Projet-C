@@ -1,9 +1,6 @@
 #include "../include/game.h"
 
 extern bool exit_program;
-extern SDL_Texture *player_texture;
-extern SDL_Texture *dragon_texture;
-extern SDL_Texture *princess_texture;
 extern SDL_Texture *coin_texture;
 SDL_Rect player_clips[MAX_SPRITE_ROWS][MAX_SPRITE_COLS];
 SDL_Rect dragon_clips[MAX_SPRITE_ROWS][MAX_SPRITE_COLS];
