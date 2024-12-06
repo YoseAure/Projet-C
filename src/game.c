@@ -221,14 +221,11 @@ void update_player(SDL_Renderer *renderer, Block **map, int width, int height, U
                     map[i][j].type = EMPTY;
                 } else if (map[i][j].type == SOCKS && checkCollision(&player, &obs)) {
                     if (player_inventory.item_count < MAX_ITEMS) {
-                        // Charger la texture de la chaussette
                         SDL_Texture *socks_texture = load_texture("assets/images/socks.png", renderer);
                         if (socks_texture) {
-                            // Ajouter l'item à l'inventaire
                             Item socks = { "Socks", socks_texture };
                             player_inventory.items[player_inventory.item_count] = socks;
                             player_inventory.item_count++;
-                            // Supprimer l'item de la carte
                             map[i][j].type = EMPTY;
                         }
                     }
@@ -628,7 +625,7 @@ void start_game(SDL_Renderer *renderer) {
         return;
     }
 
-    player.texture = loadTexture("assets/sprites/surfer-player.png", renderer);
+    player.texture = loadTexture("assets/sprites/naked-player.png", renderer);
     if (!player.texture) {
         printf("Erreur lors du chargement de la texture du joueur: %s\n", SDL_GetError());
         return;
@@ -652,9 +649,9 @@ void start_game(SDL_Renderer *renderer) {
         }
 
         if (!in_game_menu) {
-            update_player(renderer, map->blocks, map->width, map->height, currentTime);
             update_mobs(currentTime);
             animate_mobs(map->width, map->height, currentTime);
+            update_player(renderer, map->blocks, map->width, map->height, currentTime);
 
             if (player.x > cameraX + WINDOW_WIDTH / 2 && cameraX + WINDOW_WIDTH < WORLD_WIDTH) {
                 cameraX += SCROLL_SPEED;
@@ -680,7 +677,9 @@ void start_game(SDL_Renderer *renderer) {
 
             if (player.life_points > 0) {
                 render_map(renderer, map, cameraX, cameraY);
+                render_mobs(renderer, cameraX, cameraY);
                 render_player(renderer, cameraX, cameraY);
+                render_coin_count(renderer, &player);
                 render_player_life(renderer, &player);
                 render_mobs(renderer, cameraX, cameraY);
                 render_coin_count(renderer, &player);

@@ -2,14 +2,14 @@
 #define CONSTANTS_H
 
 // general
-#define WINDOW_WIDTH 1400
-#define WINDOW_HEIGHT 900
+#define WINDOW_WIDTH  1300 // 1280
+#define WINDOW_HEIGHT 900 // 720
 
 #define TILE_SIZE 30
 
 // Maps
 #define WORLD_WIDTH 13500
-#define WORLD_HEIGHT 900
+#define WORLD_HEIGHT 1500
 
 typedef enum {
     INVISIBLE,
@@ -25,6 +25,14 @@ typedef enum {
     BLOCK_DRAGON,
     BLOCK_PRINCESS,
     PLAYER,
+    SAPIN,
+    HOUSE,
+    CHEST,
+    ROCK,
+    PANEL,
+    GRASS,
+    EARTH,
+    WATER,
     SOCKS
 } BlockType;
 
@@ -36,7 +44,7 @@ typedef enum {
 
 // Player
 #define GRAVITY 1
-#define JUMP_FORCE -20
+#define JUMP_FORCE -15
 #define JUMP_DELAY 500 // ms
 #define MOVEMENT_SPEED 10
 #define SCROLL_SPEED 10

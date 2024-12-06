@@ -21,3 +21,16 @@ void getSpriteClips(SDL_Rect clips[MAX_SPRITE_ROWS][MAX_SPRITE_COLS], int rows, 
         }
     }
 }
+
+void getTileClips(SDL_Rect *clips, int tile_width, int tile_height, int tileset_width, int tileset_height) {
+    int cols = tileset_width / tile_width;
+    int rows = tileset_height / tile_height;
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            clips[i * cols + j].x = j * tile_width;
+            clips[i * cols + j].y = i * tile_height;
+            clips[i * cols + j].w = tile_width;
+            clips[i * cols + j].h = tile_height;
+        }
+    }
+}

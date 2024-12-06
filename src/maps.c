@@ -19,7 +19,53 @@ SDL_Texture *background_texture = NULL;
 SDL_Texture *dragon_texture = NULL;
 SDL_Texture *princess_texture = NULL;
 SDL_Texture *redFlag_texture = NULL;
+SDL_Texture *tileset_texture = NULL;
+SDL_Rect *tile_clips = NULL;
+SDL_Texture *ground_tileset_texture = NULL;
+SDL_Rect *ground_tile_clips = NULL;
 SDL_Texture *socks_texture = NULL;
+
+TextureInfo texture_info[] = {
+    // {{x, y, w (pixel), h (pixel)}, w (largeur de la texture), h (hauteur de la texture)}
+    {{7, 4, 51, 91}, 32, 32},       // 0 GROUND
+    {{244, 10, 138, 192}, 32, 32},  // 1 HOUSE
+    {{9, 240, 36, 31}, 32, 32},     // 2 CHEST
+    {{4, 199, 30, 25}, 32, 32},     // 3 ROCK in water
+    {{175, 185, 29, 31}},           // 4 PANEL
+    {{383, 64, 35, 35}, 32, 32},    // 5 WATER
+    {{34, 225, 29, 27}, 32, 32},    // 6 GRASS
+    {{229, 129, 23, 30}, 32, 32},   // 7 GROUND 2
+    {{101, 129, 23, 27}, 32, 32}    // 8 EARTH
+};
+int texture_count = sizeof(texture_info) / sizeof(TextureInfo);
+
+bool load_tileset(SDL_Renderer *renderer, const char *path, SDL_Texture **tileset, SDL_Rect **clips, int tile_width, int tile_height) {
+    SDL_Surface *tileset_surface = IMG_Load(path);
+    if (!tileset_surface) {
+        printf("Failed to load tileset image: %s\n", IMG_GetError());
+        return false;
+    }
+
+    *tileset = SDL_CreateTextureFromSurface(renderer, tileset_surface);
+    SDL_FreeSurface(tileset_surface);
+    if (!*tileset) {
+        printf("Failed to create texture from surface: %s\n", SDL_GetError());
+        return false;
+    }
+
+    int tileset_width, tileset_height;
+    SDL_QueryTexture(*tileset, NULL, NULL, &tileset_width, &tileset_height);
+
+    int total_tiles = (tileset_width / tile_width) * (tileset_height / tile_height);
+    *clips = malloc(total_tiles * sizeof(SDL_Rect));
+    if (!*clips) {
+        printf("Failed to allocate memory for tile clips\n");
+        return false;
+    }
+
+    getTileClips(*clips, tile_width, tile_height, tileset_width, tileset_height);
+    return true;
+}
 
 bool load_block_textures(SDL_Renderer *renderer) {
     ground_texture = IMG_LoadTexture(renderer, "../assets/images/ground-2.png");
@@ -52,7 +98,7 @@ bool load_block_textures(SDL_Renderer *renderer) {
         return false;
     }
 
-    background_texture = IMG_LoadTexture(renderer, "../assets/images/background.jpeg");
+    background_texture = IMG_LoadTexture(renderer, "../assets/images/background-3.png");
     if (background_texture == NULL) {
         printf("Error loading background texture: %s\n", SDL_GetError());
     }
@@ -84,6 +130,14 @@ bool load_block_textures(SDL_Renderer *renderer) {
     princess_texture = IMG_LoadTexture(renderer, "../assets/sprites/princess.png");
     if (!princess_texture) {
         printf("Error loading princess texture: %s\n", SDL_GetError());
+        return false;
+    }
+
+    if (!load_tileset(renderer, "../assets/tilesets/terrain-tileSet.png", &tileset_texture, &tile_clips, TILE_SIZE, TILE_SIZE)) {
+        return false;
+    }
+
+    if (!load_tileset(renderer, "../assets/tilesets/ground-tileSet.png", &ground_tileset_texture, &ground_tile_clips, TILE_SIZE, TILE_SIZE)) {
         return false;
     }
 
@@ -140,6 +194,22 @@ void free_block_textures() {
     if (princess_texture) {
         SDL_DestroyTexture(princess_texture);
         princess_texture = NULL;
+    }
+    if (tileset_texture) {
+        SDL_DestroyTexture(tileset_texture);
+        tileset_texture = NULL;
+    }
+    if (tile_clips) {
+        free(tile_clips);
+        tile_clips = NULL;
+    }
+    if (ground_tileset_texture) {
+        SDL_DestroyTexture(ground_tileset_texture);
+        ground_tileset_texture = NULL;
+    }
+    if (ground_tile_clips) {
+        free(ground_tile_clips);
+        ground_tile_clips = NULL;
     }
     if (socks_texture) {
         SDL_DestroyTexture(socks_texture);
@@ -303,11 +373,11 @@ Map* load_map(const char *filename) {
                     getSpriteClips(player.clips, PLAYER_SPRITE_ROWS, PLAYER_SPRITE_COLS, PLAYER_SPRITE_FRAME_WIDTH, PLAYER_SPRITE_FRAME_HEIGHT);
                     break;
                 case 'G':
-                    map->blocks[row][col].type = GROUND;
+                    map->blocks[row][col].type = WATER;
                     map->blocks[row][col].isSolid = true;
                     break;
                 case 'B':
-                    map->blocks[row][col].type = BRICK;
+                    map->blocks[row][col].type = WATER;
                     map->blocks[row][col].isSolid = true;
                     break;
                 case 'V':
@@ -316,7 +386,7 @@ Map* load_map(const char *filename) {
                     break;
                 case 'T':
                     map->blocks[row][col].type = TORCH;
-                    map->blocks[row][col].isSolid = true;
+                    map->blocks[row][col].isSolid = false;
                     break;
                 case 'F':
                     map->blocks[row][col].type = RED_FLAG;
@@ -392,6 +462,40 @@ Map* load_map(const char *filename) {
                     }
                     break;
                 case 'S':
+                    map->blocks[row][col].type = SAPIN;
+                    map->blocks[row][col].isSolid = true;
+                    map->blocks[row][col].height = TILE_SIZE * 4;
+                    map->blocks[row][col].width = TILE_SIZE * 2;
+                    map->blocks[row][col].y -= TILE_SIZE * 3;
+                    break;
+                case 'H':
+                    map->blocks[row][col].type = HOUSE;
+                    map->blocks[row][col].isSolid = true;
+                    map->blocks[row][col].height = TILE_SIZE * 6;
+                    map->blocks[row][col].width = TILE_SIZE * 6;
+                    break;
+                case 'c':
+                    map->blocks[row][col].type = CHEST;
+                    map->blocks[row][col].isSolid = true;
+                    break;
+                case 'R':
+                    map->blocks[row][col].type = ROCK;
+                    map->blocks[row][col].isSolid = true;
+                    break;
+                case 'p':
+                    map->blocks[row][col].type = PANEL;
+                    map->blocks[row][col].isSolid = true;
+                    break;
+                case 'g':
+                    map->blocks[row][col].type = GRASS;
+                    map->blocks[row][col].isSolid = false;
+                case 'Y':
+                    map->blocks[row][col].type = WATER;
+                    map->blocks[row][col].isSolid = false;
+                case 'w':
+                    map->blocks[row][col].type = WATER;
+                    map->blocks[row][col].isSolid = true;
+                case 'Q':
                     map->blocks[row][col].width = TILE_SIZE * 1.5;
                     map->blocks[row][col].height = TILE_SIZE * 1.5;
                     map->blocks[row][col].type = SOCKS;
@@ -437,7 +541,7 @@ void render_map(SDL_Renderer *renderer, Map *map, int cameraX, int cameraY) {
     int background_width = window_width;
     int background_height = window_height;
     int background_x = -cameraX % background_width;
-    int background_y = 0;
+    int background_y = +cameraY % background_height;
 
     SDL_Rect backgroundRect = {background_x, background_y - cameraY, background_width, background_height};
     SDL_RenderCopy(renderer, background_texture, NULL, &backgroundRect);
@@ -451,17 +555,35 @@ void render_map(SDL_Renderer *renderer, Map *map, int cameraX, int cameraY) {
         for (int j = 0; j < map->width; ++j) {
             SDL_Rect rect = { map->blocks[i][j].x - cameraX, map->blocks[i][j].y - cameraY, map->blocks[i][j].width, map->blocks[i][j].height };
             switch (map->blocks[i][j].type) {
+                case WATER:
+                    SDL_RenderCopy(renderer, ground_tileset_texture, &texture_info[5].clip, &rect);
+                    break;
                 case GROUND:
-                    SDL_RenderCopy(renderer, ground_texture, NULL, &rect);
+                    SDL_RenderCopy(renderer, ground_tileset_texture, &texture_info[7].clip, &rect);
                     break;
                 case BRICK:
-                    SDL_RenderCopy(renderer, brick_texture, NULL, &rect);
+                    SDL_RenderCopy(renderer, ground_tileset_texture, &texture_info[8].clip, &rect);
                     break;
                 case PILAR:
                     SDL_RenderCopy(renderer, pilar_texture, NULL, &rect);
                     break;
                 case TORCH:
                     SDL_RenderCopy(renderer, torch_texture, NULL, &rect);
+                case SAPIN:
+                    rect.w = TILE_SIZE * 2;
+                    rect.h = TILE_SIZE * 4;
+                    SDL_RenderCopy(renderer, tileset_texture, &texture_info[0].clip, &rect);
+                    break;
+                case HOUSE:
+                    rect.w = TILE_SIZE * 6;
+                    rect.h = TILE_SIZE * 6;
+                    SDL_RenderCopy(renderer, tileset_texture, &texture_info[1].clip, &rect);
+                    break;
+                case CHEST:
+                    SDL_RenderCopy(renderer, tileset_texture, &texture_info[2].clip, &rect);
+                    break;
+                case ROCK:
+                    SDL_RenderCopy(renderer, tileset_texture, &texture_info[3].clip, &rect);
                     break;
                 case RED_FLAG:
                     SDL_RenderCopy(renderer, redFlag_texture, NULL, &rect);
@@ -472,6 +594,15 @@ void render_map(SDL_Renderer *renderer, Map *map, int cameraX, int cameraY) {
                 case BLACK:
                     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
                     SDL_RenderFillRect(renderer, &rect);
+                    break;
+                case PANEL:
+                    SDL_RenderCopy(renderer, tileset_texture, &texture_info[4].clip, &rect);
+                    break;
+                case GRASS:
+                    SDL_RenderCopy(renderer, ground_tileset_texture, &texture_info[6].clip, &rect);
+                    break;
+                case EARTH:
+                    SDL_RenderCopy(renderer, ground_tileset_texture, &texture_info[8].clip, &rect);
                     break;
                 case SOCKS:
                     SDL_RenderCopy(renderer, socks_texture, NULL, &rect);

@@ -32,6 +32,12 @@ typedef struct {
 } Player;
 
 typedef struct {
+    SDL_Rect clip;
+    int width;
+    int height;
+} TextureInfo;
+
+typedef struct {
     int x, y, width, height;
     int x_speed, y_speed;
     int initial_x, initial_y;
