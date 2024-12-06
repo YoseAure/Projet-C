@@ -24,7 +24,8 @@ typedef enum {
     BLACK,
     BLOCK_DRAGON,
     BLOCK_PRINCESS,
-    PLAYER
+    PLAYER,
+    SOCKS
 } BlockType;
 
 typedef enum {
@@ -67,5 +68,14 @@ typedef enum {
 #define  DRAGON_SPRITE_ROWS 1
 #define  DRAGON_SPRITE_COLS 9
 #define  DRAGON_SPEED 10
+
+
+// Items
+#define MAX_ITEMS 9
+
+// Inventory
+#define INVENTORY_DEFINED
+#define INVENTORY_SIZE 3
+
 
 #endif // CONSTANTS_H

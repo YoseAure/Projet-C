@@ -25,6 +25,9 @@ Player player;
 
 bool keys[SDL_NUM_SCANCODES] = {false};
 
+Inventory player_inventory = { .item_count = 0 };
+bool show_inventory = false;
+
 void reset_game_state() {
     mob_count = 0;
     for (int i = 0; i < MAX_MOBS; i++) {
@@ -57,9 +60,23 @@ bool checkCollision(Player *player, SDL_Rect *obs) {
 void handle_input(SDL_Event *e) {
     if (e->type == SDL_KEYDOWN) {
         keys[e->key.keysym.scancode] = true;
+        if (e->key.keysym.scancode == SDL_SCANCODE_I) {
+            show_inventory = !show_inventory;
+        }
     } else if (e->type == SDL_KEYUP) {
         keys[e->key.keysym.scancode] = false;
     }
+}
+
+SDL_Texture* load_texture(const char *file, SDL_Renderer *renderer) {
+    SDL_Surface *surface = IMG_Load(file);
+    if (!surface) {
+        printf("Erreur IMG_Load: %s\n", IMG_GetError());
+        return NULL;
+    }
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
+    return texture;
 }
 
 void update_player(SDL_Renderer *renderer, Block **map, int width, int height, Uint32 currentTime) {
@@ -202,6 +219,19 @@ void update_player(SDL_Renderer *renderer, Block **map, int width, int height, U
                 } else if (map[i][j].type == COIN && checkCollision(&player, &obs)) {
                     player.coins_count++;
                     map[i][j].type = EMPTY;
+                } else if (map[i][j].type == SOCKS && checkCollision(&player, &obs)) {
+                    if (player_inventory.item_count < MAX_ITEMS) {
+                        // Charger la texture de la chaussette
+                        SDL_Texture *socks_texture = load_texture("assets/images/socks.png", renderer);
+                        if (socks_texture) {
+                            // Ajouter l'item à l'inventaire
+                            Item socks = { "Socks", socks_texture };
+                            player_inventory.items[player_inventory.item_count] = socks;
+                            player_inventory.item_count++;
+                            // Supprimer l'item de la carte
+                            map[i][j].type = EMPTY;
+                        }
+                    }
                 }
             }
         }
@@ -402,7 +432,7 @@ void display_in_game_menu(SDL_Renderer *renderer, Player *player, bool *return_t
         return;
     }
 
-    SDL_Color white = {255, 255, 255, 255};
+    SDL_Color black = {0, 0, 0, 255};
     SDL_Color yellow = {255, 255, 0, 255};
 
     const char *options[3];
@@ -436,6 +466,12 @@ void display_in_game_menu(SDL_Renderer *renderer, Player *player, bool *return_t
         printf("Erreur Mix_LoadWAV: %s\n", Mix_GetError());
         exit_program = true;
         quit = true;
+    }
+
+    SDL_Texture *background_texture = load_texture("assets/images/img_game_menu.jpeg", renderer);
+    if (!background_texture) {
+        printf("Erreur lors du chargement de l'image de fond\n");
+        return;
     }
 
     while (!quit) {
@@ -492,8 +528,9 @@ void display_in_game_menu(SDL_Renderer *renderer, Player *player, bool *return_t
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, background_texture, NULL, NULL);
 
-        SDL_Surface *title_surface = TTF_RenderText_Solid(title_font, player->life_points > 0 ? "Game Paused" : "Game Over" , white);
+        SDL_Surface *title_surface = TTF_RenderText_Solid(title_font, player->life_points > 0 ? "Game Paused" : "Game Over" , black);
         SDL_Texture *title_texture = SDL_CreateTextureFromSurface(renderer, title_surface);
 
         int title_width = title_surface->w;
@@ -509,7 +546,7 @@ void display_in_game_menu(SDL_Renderer *renderer, Player *player, bool *return_t
 
         // options
         for (int i = 0; i < 3; ++i) {
-            SDL_Color color = (i == selected) ? yellow : white;
+            SDL_Color color = (i == selected) ? yellow : black;
             TTF_Font *current_font = (i == selected) ? font_large : font;
 
             SDL_Surface *surface = TTF_RenderText_Solid(current_font, options[i], color);
@@ -537,6 +574,7 @@ void display_in_game_menu(SDL_Renderer *renderer, Player *player, bool *return_t
     // Nettoyage
     Mix_FreeChunk(menu_selection_sound);
     SDL_DestroyTexture(logo_texture);
+    SDL_DestroyTexture(background_texture);
     TTF_CloseFont(font);
     TTF_CloseFont(font_large);
     TTF_CloseFont(title_font);
@@ -646,6 +684,9 @@ void start_game(SDL_Renderer *renderer) {
                 render_player_life(renderer, &player);
                 render_mobs(renderer, cameraX, cameraY);
                 render_coin_count(renderer, &player);
+                if (show_inventory) {
+                    render_inventory(renderer, &player_inventory);
+                }
             } else {
                 display_in_game_menu(renderer, &player, &return_to_main_menu, &quit_game, &resume_game);
             }
@@ -671,4 +712,199 @@ void start_game(SDL_Renderer *renderer) {
     }
 
     free_block_textures();
+}
+
+void render_inventory(SDL_Renderer *renderer, Inventory *inventory) {
+    int inventory_size = 3;
+    int item_size = 64;
+    int padding = 10;
+    int background_padding = 30;
+    int start_x = (WINDOW_WIDTH - (inventory_size * item_size + (inventory_size - 1) * padding)) / 2;
+    int start_y = (WINDOW_HEIGHT - (inventory_size * item_size + (inventory_size - 1) * padding)) / 2;
+
+    SDL_Rect background_rect = {
+        start_x - background_padding,
+        start_y - background_padding,
+        inventory_size * (item_size + padding) - padding + 2 * background_padding,
+        inventory_size * (item_size + padding) - padding + 2 * background_padding
+    };
+    SDL_SetRenderDrawColor(renderer, 50, 50, 50, 255);
+    SDL_RenderFillRect(renderer, &background_rect);
+
+    TTF_Font *font = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 24);
+    if (!font) {
+        printf("Erreur TTF_OpenFont: %s\n", TTF_GetError());
+        return;
+    }
+    SDL_Color white = {255, 255, 255, 255};
+    SDL_Surface *surface = TTF_RenderText_Solid(font, "Inventaire", white);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Rect text_rect = {start_x - background_padding - -5, start_y - background_padding - 1, surface->w, surface->h};
+    SDL_RenderCopy(renderer, texture, NULL, &text_rect);
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
+    TTF_CloseFont(font);
+
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // Blanc
+    for (int i = 0; i < inventory_size; ++i) {
+        for (int j = 0; j < inventory_size; ++j) {
+            SDL_Rect cell_rect = {
+                start_x + j * (item_size + padding),
+                start_y + i * (item_size + padding),
+                item_size,
+                item_size
+            };
+            SDL_RenderDrawRect(renderer, &cell_rect);
+        }
+    }
+
+    // Afficher les items
+    for (int i = 0; i < inventory->item_count; ++i) {
+        int row = i / inventory_size;
+        int col = i % inventory_size;
+        SDL_Rect item_rect = {
+            start_x + col * (item_size + padding),
+            start_y + row * (item_size + padding),
+            item_size,
+            item_size
+        };
+        SDL_RenderCopy(renderer, inventory->items[i].texture, NULL, &item_rect);
+    }
+}
+
+void display_game_over_menu(SDL_Renderer *renderer, Player *player, bool *return_to_main_menu, bool *quit_game) {
+    TTF_Font *font = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 32);
+    TTF_Font *font_large = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 36);
+    TTF_Font *title_font = TTF_OpenFont("assets/fonts/mario-font-2.ttf", 72);
+
+    if (!font || !title_font || !font_large) {
+        printf("Erreur TTF_OpenFont: %s\n", TTF_GetError());
+        return;
+    }
+
+    SDL_Color black = {0, 0, 0, 255};
+    SDL_Color yellow = {255, 255, 0, 255};
+
+    const char *options[3] = { "Restart Game", "Main Menu", "Quit" };
+
+    int selected = 0;
+    bool quit = false;
+    SDL_Event event;
+
+    int window_width, window_height;
+    SDL_GetRendererOutputSize(renderer, &window_width, &window_height);
+
+    SDL_Surface *logo_surface = IMG_Load("assets/images/surf.png");
+    if (!logo_surface) {
+        printf("Erreur IMG_Load: %s\n", IMG_GetError());
+        return;
+    }
+    SDL_Texture *logo_texture = SDL_CreateTextureFromSurface(renderer, logo_surface);
+    SDL_FreeSurface(logo_surface);
+
+    Mix_Chunk *menu_selection_sound = Mix_LoadWAV("assets/audio/menu-selection.mp3");
+    if (!menu_selection_sound) {
+        printf("Erreur Mix_LoadWAV: %s\n", Mix_GetError());
+        exit_program = true;
+        quit = true;
+    }
+
+    SDL_Texture *background_texture = load_texture("assets/images/img_game_menu.jpeg", renderer);
+    if (!background_texture) {
+        printf("Erreur lors du chargement de l'image de fond\n");
+        return;
+    }
+
+    while (!quit) {
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                *return_to_main_menu = true;
+                quit = true;
+            } else if (event.type == SDL_KEYDOWN) {
+                switch (event.key.keysym.sym) {
+                    case SDLK_UP:
+                        selected = (selected - 1 + 3) % 3;
+                        if (sound_effects_enabled) {
+                            Mix_PlayChannel(-1, menu_selection_sound, 0);
+                        }
+                        break;
+                    case SDLK_DOWN:
+                        selected = (selected + 1) % 3;
+                        if (sound_effects_enabled) {
+                            Mix_PlayChannel(-1, menu_selection_sound, 0);
+                        }
+                        break;
+                    case SDLK_RETURN:
+                        if (selected == 0) {
+                            start_game(renderer);
+                            quit = true;
+                        } else if (selected == 1) {
+                            *return_to_main_menu = true;
+                            quit = true;
+                        } else if (selected == 2) {
+                            *quit_game = true;
+                            exit_program = true;
+                            quit = true;
+                        }
+                        break;
+                    case SDLK_ESCAPE:
+                        *return_to_main_menu = true;
+                        quit = true;
+                        break;
+                }
+            }
+        }
+
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, background_texture, NULL, NULL);
+
+        SDL_Surface *title_surface = TTF_RenderText_Solid(title_font, "Game Over", black);
+        SDL_Texture *title_texture = SDL_CreateTextureFromSurface(renderer, title_surface);
+
+        int title_width = title_surface->w;
+        int title_height = title_surface->h;
+        int title_x = (window_width - title_width) / 2;
+        int title_y = (window_height / 4) - (title_height / 2);
+
+        SDL_Rect title_dest = {title_x, title_y, title_width, title_height};
+        SDL_RenderCopy(renderer, title_texture, NULL, &title_dest);
+
+        SDL_FreeSurface(title_surface);
+        SDL_DestroyTexture(title_texture);
+
+        // options
+        for (int i = 0; i < 3; ++i) {
+            SDL_Color color = (i == selected) ? yellow : black;
+            TTF_Font *current_font = (i == selected) ? font_large : font;
+
+            SDL_Surface *surface = TTF_RenderText_Solid(current_font, options[i], color);
+            SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+            int text_width = surface->w;
+            int text_height = surface->h;
+            int x = (window_width - text_width) / 2;
+            int y = (window_height / 2) + (i * (text_height + 20));
+
+            SDL_Rect dest = {x, y, text_width, text_height};
+            SDL_RenderCopy(renderer, texture, NULL, &dest);
+
+            if (i == selected) {
+                render_logo(renderer, logo_texture, y, x);
+            }
+
+            SDL_FreeSurface(surface);
+            SDL_DestroyTexture(texture);
+        }
+
+        SDL_RenderPresent(renderer);
+    }
+
+    // Nettoyage
+    Mix_FreeChunk(menu_selection_sound);
+    SDL_DestroyTexture(logo_texture);
+    SDL_DestroyTexture(background_texture);
+    TTF_CloseFont(font);
+    TTF_CloseFont(font_large);
+    TTF_CloseFont(title_font);
 }
