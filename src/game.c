@@ -631,6 +631,7 @@ void start_game(SDL_Renderer *renderer) {
     bool return_to_main_menu = false;
     bool in_game_menu = false;
     bool resume_game = false;
+    bool surfboard = false;
     SDL_Event event;
 
     load_block_textures(renderer);
@@ -669,9 +670,21 @@ void start_game(SDL_Renderer *renderer) {
                     in_game_menu = !in_game_menu;
                 }
                 if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_RETURN && start_speech) {
-                    speech_index++;
-                    if (speech_index >= sizeof(dialogue) / sizeof(dialogue[0])) {
+                    if (speech_index == 2) {
+                        if (player.coins_count >= 4) {
+                            speech_index = 4;
+                            player.coins_count -= 4;
+                            surfboard = true;
+                        } else if (player.coins_count < 4) {
+                            speech_index ++;
+                        }
+                    }else if (speech_index == 3) {
                         start_speech = false;
+                    } else {
+                        speech_index++;
+                        if (speech_index >= sizeof(dialogue) / sizeof(dialogue[0])) {
+                            start_speech = false;
+                        }
                     }
                 }
             }
@@ -717,6 +730,15 @@ void start_game(SDL_Renderer *renderer) {
                 }
                 if (start_speech) {
                     render_speech_bubble(renderer, dialogue[speech_index]);
+                }
+                if (surfboard && player_inventory.item_count < MAX_ITEMS) {
+                    SDL_Texture *surf_texture = load_texture("assets/images/surf.png", renderer);
+                    if (surf_texture) {
+                        Item surf = { "Surfboard", surf_texture };
+                        player_inventory.items[player_inventory.item_count] = surf;
+                        player_inventory.item_count++;
+                        surfboard = false; // Reset surfboard to avoid adding multiple times
+                    }
                 }
             } else {
                 display_in_game_menu(renderer, &player, &return_to_main_menu, &quit_game, &resume_game);
