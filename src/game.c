@@ -1,4 +1,5 @@
 #include "../include/game.h"
+#include "../include/speech.h" // Ajoutez cette ligne pour inclure speech.h
 
 extern bool exit_program;
 extern SDL_Texture *coin_texture;
@@ -20,6 +21,9 @@ const Uint32 FRAME_DELAY = 100;
 
 bool mario_gameType = true;
 bool pokemon_gameType = false;
+
+bool start_speech = false;
+int speech_index = 0; // Ajoutez cette variable pour suivre l'index du dialogue
 
 Player player;
 
@@ -77,6 +81,33 @@ SDL_Texture* load_texture(const char *file, SDL_Renderer *renderer) {
     SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
     return texture;
+}
+
+void render_speech_bubble(SDL_Renderer *renderer, const char *message) {
+    TTF_Font *font = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 24);
+    if (!font) {
+        printf("Erreur TTF_OpenFont: %s\n", TTF_GetError());
+        return;
+    }
+
+    SDL_Color black = {0, 0, 0, 255};
+    SDL_Surface *surface = TTF_RenderText_Solid(font, message, black);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+    int text_width = surface->w;
+    int text_height = surface->h;
+    SDL_Rect dest = { (WINDOW_WIDTH - text_width) / 2, (WINDOW_HEIGHT - text_height) / 2, text_width, text_height };
+
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // Blanc
+    SDL_Rect background_rect = { dest.x - 10, dest.y - 10, text_width + 20, text_height + 20 };
+    SDL_RenderFillRect(renderer, &background_rect);
+
+    SDL_RenderCopy(renderer, texture, NULL, &dest);
+
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
+    TTF_CloseFont(font);
+    
 }
 
 void update_player(SDL_Renderer *renderer, Block **map, int width, int height, Uint32 currentTime) {
@@ -229,18 +260,10 @@ void update_player(SDL_Renderer *renderer, Block **map, int width, int height, U
                             map[i][j].type = EMPTY;
                         }
                     }
-                }
-            }
-        }
-
-        for (int i = 0; i < mob_count; i++) {
-            if (mobs[i].type != PRINCESS) {
-                SDL_Rect mob_rect = { mobs[i].x, mobs[i].y, mobs[i].width, mobs[i].height };
-                if (checkCollision(&player, &mob_rect)) {
-                    if (currentTime - player.lastHit_t >= 1000) {
-                        player.lastHit_t = currentTime;
-                        player.life_points--;
-                    }
+                    
+                } else if (map[i][j].type == STORE && checkCollision(&player, &obs)) {
+                    start_speech = true;
+                    speech_index = 0; // Réinitialisez l'index du dialogue
                 }
             }
         }
@@ -645,6 +668,12 @@ void start_game(SDL_Renderer *renderer) {
                 if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
                     in_game_menu = !in_game_menu;
                 }
+                if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_RETURN && start_speech) {
+                    speech_index++;
+                    if (speech_index >= sizeof(dialogue) / sizeof(dialogue[0])) {
+                        start_speech = false;
+                    }
+                }
             }
         }
 
@@ -685,6 +714,9 @@ void start_game(SDL_Renderer *renderer) {
                 render_coin_count(renderer, &player);
                 if (show_inventory) {
                     render_inventory(renderer, &player_inventory);
+                }
+                if (start_speech) {
+                    render_speech_bubble(renderer, dialogue[speech_index]);
                 }
             } else {
                 display_in_game_menu(renderer, &player, &return_to_main_menu, &quit_game, &resume_game);

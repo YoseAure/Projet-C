@@ -33,7 +33,8 @@ typedef enum {
     GRASS,
     EARTH,
     WATER,
-    SOCKS
+    SOCKS,
+    STORE
 } BlockType;
 
 typedef enum {

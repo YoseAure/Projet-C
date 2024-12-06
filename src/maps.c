@@ -1,4 +1,4 @@
-#include "../include/maps.h"
+ #include "../include/maps.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -24,6 +24,7 @@ SDL_Rect *tile_clips = NULL;
 SDL_Texture *ground_tileset_texture = NULL;
 SDL_Rect *ground_tile_clips = NULL;
 SDL_Texture *socks_texture = NULL;
+SDL_Texture *store_texture = NULL;
 
 TextureInfo texture_info[] = {
     // {{x, y, w (pixel), h (pixel)}, w (largeur de la texture), h (hauteur de la texture)}
@@ -147,6 +148,12 @@ bool load_block_textures(SDL_Renderer *renderer) {
         return false;
     }
 
+    store_texture = IMG_LoadTexture(renderer, "../assets/images/speech_bubble.png");
+    if (!store_texture) {
+        printf("Error loading store texture: %s\n", SDL_GetError());
+        return false;
+    }
+
     return true;
 }
 
@@ -214,6 +221,10 @@ void free_block_textures() {
     if (socks_texture) {
         SDL_DestroyTexture(socks_texture);
         socks_texture = NULL;
+    }
+    if (store_texture) {
+        SDL_DestroyTexture(store_texture);
+        store_texture = NULL;
     }
 }
 
@@ -501,6 +512,12 @@ Map* load_map(const char *filename) {
                     map->blocks[row][col].type = SOCKS;
                     map->blocks[row][col].isSolid = false;
                     break;
+                case 'M':
+                    map->blocks[row][col].width = TILE_SIZE * 1.5;
+                    map->blocks[row][col].height = TILE_SIZE * 1.5;
+                    map->blocks[row][col].type = STORE;
+                    map->blocks[row][col].isSolid = false;
+                    break;
                 default:
                     map->blocks[row][col].type = EMPTY;
                     map->blocks[row][col].isSolid = false;
@@ -569,6 +586,7 @@ void render_map(SDL_Renderer *renderer, Map *map, int cameraX, int cameraY) {
                     break;
                 case TORCH:
                     SDL_RenderCopy(renderer, torch_texture, NULL, &rect);
+                    break;
                 case SAPIN:
                     rect.w = TILE_SIZE * 2;
                     rect.h = TILE_SIZE * 4;
@@ -606,6 +624,9 @@ void render_map(SDL_Renderer *renderer, Map *map, int cameraX, int cameraY) {
                     break;
                 case SOCKS:
                     SDL_RenderCopy(renderer, socks_texture, NULL, &rect);
+                    break;
+                case STORE:
+                    SDL_RenderCopy(renderer, store_texture, NULL, &rect);
                     break;
                 case INVISIBLE:
                 case EMPTY:
