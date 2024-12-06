@@ -24,7 +24,8 @@ typedef enum {
     BLACK,
     BLOCK_DRAGON,
     BLOCK_PRINCESS,
-    PLAYER
+    PLAYER,
+    SOCKS
 } BlockType;
 
 typedef enum {
@@ -70,7 +71,7 @@ typedef enum {
 
 
 // Items
-#define MAX_ITEMS 10
+#define MAX_ITEMS 9
 
 // Inventory
 #define INVENTORY_DEFINED

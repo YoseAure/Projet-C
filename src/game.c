@@ -68,6 +68,17 @@ void handle_input(SDL_Event *e) {
     }
 }
 
+SDL_Texture* load_texture(const char *file, SDL_Renderer *renderer) {
+    SDL_Surface *surface = IMG_Load(file);
+    if (!surface) {
+        printf("Erreur IMG_Load: %s\n", IMG_GetError());
+        return NULL;
+    }
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
+    return texture;
+}
+
 void update_player(SDL_Renderer *renderer, Block **map, int width, int height, Uint32 currentTime) {
     bool moving = false;
 
@@ -208,6 +219,19 @@ void update_player(SDL_Renderer *renderer, Block **map, int width, int height, U
                 } else if (map[i][j].type == COIN && checkCollision(&player, &obs)) {
                     player.coins_count++;
                     map[i][j].type = EMPTY;
+                } else if (map[i][j].type == SOCKS && checkCollision(&player, &obs)) {
+                    if (player_inventory.item_count < MAX_ITEMS) {
+                        // Charger la texture de la chaussette
+                        SDL_Texture *socks_texture = load_texture("assets/images/socks.png", renderer);
+                        if (socks_texture) {
+                            // Ajouter l'item à l'inventaire
+                            Item socks = { "Socks", socks_texture };
+                            player_inventory.items[player_inventory.item_count] = socks;
+                            player_inventory.item_count++;
+                            // Supprimer l'item de la carte
+                            map[i][j].type = EMPTY;
+                        }
+                    }
                 }
             }
         }

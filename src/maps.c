@@ -19,6 +19,7 @@ SDL_Texture *background_texture = NULL;
 SDL_Texture *dragon_texture = NULL;
 SDL_Texture *princess_texture = NULL;
 SDL_Texture *redFlag_texture = NULL;
+SDL_Texture *socks_texture = NULL;
 
 bool load_block_textures(SDL_Renderer *renderer) {
     ground_texture = IMG_LoadTexture(renderer, "../assets/images/ground-2.png");
@@ -86,6 +87,12 @@ bool load_block_textures(SDL_Renderer *renderer) {
         return false;
     }
 
+    socks_texture = IMG_LoadTexture(renderer, "../assets/images/socks.png");
+    if (!socks_texture) {
+        printf("Error loading socks texture: %s\n", SDL_GetError());
+        return false;
+    }
+
     return true;
 }
 
@@ -133,6 +140,10 @@ void free_block_textures() {
     if (princess_texture) {
         SDL_DestroyTexture(princess_texture);
         princess_texture = NULL;
+    }
+    if (socks_texture) {
+        SDL_DestroyTexture(socks_texture);
+        socks_texture = NULL;
     }
 }
 
@@ -380,6 +391,12 @@ Map* load_map(const char *filename) {
                         mob_count++;
                     }
                     break;
+                case 'S':
+                    map->blocks[row][col].width = TILE_SIZE * 1.5;
+                    map->blocks[row][col].height = TILE_SIZE * 1.5;
+                    map->blocks[row][col].type = SOCKS;
+                    map->blocks[row][col].isSolid = false;
+                    break;
                 default:
                     map->blocks[row][col].type = EMPTY;
                     map->blocks[row][col].isSolid = false;
@@ -455,6 +472,9 @@ void render_map(SDL_Renderer *renderer, Map *map, int cameraX, int cameraY) {
                 case BLACK:
                     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
                     SDL_RenderFillRect(renderer, &rect);
+                    break;
+                case SOCKS:
+                    SDL_RenderCopy(renderer, socks_texture, NULL, &rect);
                     break;
                 case INVISIBLE:
                 case EMPTY:
