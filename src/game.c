@@ -79,6 +79,15 @@ SDL_Texture* load_texture(const char *file, SDL_Renderer *renderer) {
     return texture;
 }
 
+void play_life_loss_sound() {
+    Mix_Chunk *life_loss = Mix_LoadWAV("assets/audio/perdre_vie.mp3");
+    if (life_loss == NULL) {
+        printf("Failed to load life loss sound: %s\n", Mix_GetError());
+        return;
+    }
+    Mix_PlayChannel(-1, life_loss, 0);
+}
+
 void update_player(SDL_Renderer *renderer, Block **map, int width, int height, Uint32 currentTime) {
     bool moving = false;
 
@@ -215,6 +224,8 @@ void update_player(SDL_Renderer *renderer, Block **map, int width, int height, U
                     if (currentTime - player.lastHit_t >= 1000) {
                         player.lastHit_t = currentTime;
                         player.life_points--;
+                        play_life_loss_sound();
+                        play_life_loss_sound();
                     }
                 } else if (map[i][j].type == COIN && checkCollision(&player, &obs)) {
                     player.coins_count++;
@@ -240,6 +251,8 @@ void update_player(SDL_Renderer *renderer, Block **map, int width, int height, U
                     if (currentTime - player.lastHit_t >= 1000) {
                         player.lastHit_t = currentTime;
                         player.life_points--;
+                        play_life_loss_sound();
+                        play_life_loss_sound();
                     }
                 }
             }
@@ -603,7 +616,26 @@ void update_mobs(Uint32 currentTime) {
     }
 }
 
+void play_horn_sound() {
+    Mix_Chunk *horn = Mix_LoadWAV("assets/audio/klaxon.mp3");
+    if (horn == NULL) {
+        printf("Failed to load horn sound: %s\n", Mix_GetError());
+        return;
+    }
+    Mix_PlayChannel(-1, horn, 0);
+}
+
+void play_loss_sound() {
+    Mix_Chunk *loss = Mix_LoadWAV("assets/audio/perdu.mp3");
+    if (loss == NULL) {
+        printf("Failed to load loss sound: %s\n", Mix_GetError());
+        return;
+    }
+    Mix_PlayChannel(-1, loss, 0);
+}
+
 void start_game(SDL_Renderer *renderer) {
+    play_horn_sound();
     bool quit_game = false;
     bool return_to_main_menu = false;
     bool in_game_menu = false;
@@ -687,6 +719,7 @@ void start_game(SDL_Renderer *renderer) {
                     render_inventory(renderer, &player_inventory);
                 }
             } else {
+                play_loss_sound();
                 display_in_game_menu(renderer, &player, &return_to_main_menu, &quit_game, &resume_game);
             }
         } else {

@@ -21,5 +21,8 @@ void render_player(SDL_Renderer *renderer, int cameraX, int cameraY);
 void render_mobs(SDL_Renderer *renderer, int cameraX, int cameraY);
 void animate_mobs(int width, int height, Uint32 currentTime);
 void update_mobs(Uint32 currentTime);
+void play_horn_sound();
+void play_loss_sound();
+void play_life_loss_sound();
 
 #endif // GAME_H
