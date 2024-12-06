@@ -29,7 +29,8 @@ typedef enum {
 
 typedef enum {
     DRAGON,
-    PRINCESS
+    PRINCESS,
+    PESTYFLORE
 } MobType;
 
 // Player

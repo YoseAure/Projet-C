@@ -19,6 +19,7 @@ typedef struct {
 typedef struct {
     int x, y, width, height;
     int life_points;
+    int total_life_points;
     int coins_count;
     bool isJumping;
     int y_speed;

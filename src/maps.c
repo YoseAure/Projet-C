@@ -62,7 +62,7 @@ bool load_block_textures(SDL_Renderer *renderer) {
         return false;
     }
 
-    enemy_texture = IMG_LoadTexture(renderer, "../assets/images/enemy.gif");
+    enemy_texture = IMG_LoadTexture(renderer, "../assets/images/pestyflore.png");
     if (!enemy_texture) {
         printf("Error loading ennemy texture: %s\n", SDL_GetError());
         return false;
@@ -284,7 +284,8 @@ Map* load_map(const char *filename) {
                     player.y_speed = 0;
                     player.lastJump_t = 0;
                     player.lastHit_t = 0;
-                    player.life_points = 1;
+                    player.life_points = 4;
+                    player.total_life_points = 4;
                     player.coins_count = 0;
                     player.animation_row = IDLE;
                     player.texture = player_texture;
@@ -318,7 +319,22 @@ Map* load_map(const char *filename) {
                     break;
                 case 'E':
                     map->blocks[row][col].type = ENEMY;
-                    map->blocks[row][col].isSolid = true;
+                    map->blocks[row][col].isSolid = false;
+                    if (mob_count < MAX_MOBS) {
+                        mobs[mob_count].x = col * TILE_SIZE;
+                        mobs[mob_count].y = row * TILE_SIZE;
+                        mobs[mob_count].width = TILE_SIZE;
+                        mobs[mob_count].height = TILE_SIZE;
+                        mobs[mob_count].type = PESTYFLORE;
+                        mobs[mob_count].animation_row = 0;
+                        mobs[mob_count].texture = enemy_texture;
+                        mobs[mob_count].direction = 1;
+                        mobs[mob_count].x_speed = 0;
+                        mobs[mob_count].y_speed = 0;
+                        mobs[mob_count].initial_x = col * TILE_SIZE;
+                        mobs[mob_count].initial_y = row * TILE_SIZE;
+                        mob_count++;
+                    }
                     break;
                 case 'N':
                     map->blocks[row][col].type = BLACK;
@@ -389,7 +405,15 @@ void free_map(Map *map) {
     free(map);
 }
 
-void render_map(SDL_Renderer *renderer, Map *map, int cameraX) {
+void render_map(SDL_Renderer *renderer, Map *map, int cameraX, int cameraY) {
+    /*
+    TODO: ajouter variable i et j pour charger les différentes map
+    i : numéro du niveau
+    j : numéro de la map
+    idée : charger les maps dans un tableau de map ?
+    idée : charger différentes musiques selon la map en utilisant la même logique avec i et j ?
+    */
+   
     int window_width, window_height;
     SDL_GetRendererOutputSize(renderer, &window_width, &window_height);
 
@@ -398,17 +422,17 @@ void render_map(SDL_Renderer *renderer, Map *map, int cameraX) {
     int background_x = -cameraX % background_width;
     int background_y = 0;
 
-    SDL_Rect backgroundRect = {background_x, background_y, background_width, background_height};
+    SDL_Rect backgroundRect = {background_x, background_y - cameraY, background_width, background_height};
     SDL_RenderCopy(renderer, background_texture, NULL, &backgroundRect);
 
     if (background_x + background_width < window_width) {
-        SDL_Rect backgroundRect2 = {background_x + background_width, background_y, background_width, background_height};
+        SDL_Rect backgroundRect2 = {background_x + background_width, background_y - cameraY, background_width, background_height};
         SDL_RenderCopy(renderer, background_texture, NULL, &backgroundRect2);
     }
 
     for (int i = 0; i < map->height; ++i) {
         for (int j = 0; j < map->width; ++j) {
-            SDL_Rect rect = { map->blocks[i][j].x - cameraX, map->blocks[i][j].y, map->blocks[i][j].width, map->blocks[i][j].height };
+            SDL_Rect rect = { map->blocks[i][j].x - cameraX, map->blocks[i][j].y - cameraY, map->blocks[i][j].width, map->blocks[i][j].height };
             switch (map->blocks[i][j].type) {
                 case GROUND:
                     SDL_RenderCopy(renderer, ground_texture, NULL, &rect);
@@ -427,9 +451,6 @@ void render_map(SDL_Renderer *renderer, Map *map, int cameraX) {
                     break;
                 case COIN:
                     SDL_RenderCopy(renderer, coin_texture, NULL, &rect);
-                    break;
-                case ENEMY:
-                    SDL_RenderCopy(renderer, enemy_texture, NULL, &rect);
                     break;
                 case BLACK:
                     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);

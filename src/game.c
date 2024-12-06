@@ -1,9 +1,7 @@
 #include "../include/game.h"
 
 extern bool exit_program;
-extern SDL_Texture *player_texture;
-extern SDL_Texture *dragon_texture;
-extern SDL_Texture *princess_texture;
+extern SDL_Texture *coin_texture;
 SDL_Rect player_clips[MAX_SPRITE_ROWS][MAX_SPRITE_COLS];
 SDL_Rect dragon_clips[MAX_SPRITE_ROWS][MAX_SPRITE_COLS];
 SDL_Rect princess_clips[MAX_SPRITE_ROWS][MAX_SPRITE_COLS];
@@ -64,7 +62,7 @@ void handle_input(SDL_Event *e) {
     }
 }
 
-void update_player(Block **map, int width, int height, Uint32 currentTime) {
+void update_player(SDL_Renderer *renderer, Block **map, int width, int height, Uint32 currentTime) {
     bool moving = false;
 
     if (mario_gameType && !pokemon_gameType) {
@@ -286,18 +284,18 @@ void animate_mobs(int width, int height, Uint32 currentTime) {
     }
 }
 
-void render_player(SDL_Renderer *renderer, int cameraX) {
-    SDL_Rect sprite_rect = { player.x - cameraX + (player.width - PLAYER_SPRITE_FRAME_WIDTH) / 2, player.y - (PLAYER_SPRITE_FRAME_HEIGHT - player.height) + 2, PLAYER_SPRITE_FRAME_WIDTH, PLAYER_SPRITE_FRAME_HEIGHT };
+void render_player(SDL_Renderer *renderer, int cameraX, int cameraY) {
+    SDL_Rect sprite_rect = { player.x - cameraX + (player.width - PLAYER_SPRITE_FRAME_WIDTH) / 2, player.y - cameraY + (player.height - PLAYER_SPRITE_FRAME_HEIGHT) + 2, PLAYER_SPRITE_FRAME_WIDTH, PLAYER_SPRITE_FRAME_HEIGHT };
     SDL_RenderCopy(renderer, player.texture, &player.clips[player.animation_row][player.current_frame], &sprite_rect);
 }
 
-void render_mobs(SDL_Renderer *renderer, int cameraX) {
+void render_mobs(SDL_Renderer *renderer, int cameraX, int cameraY) {
     for (int i = 0; i < mob_count; i++) {
         SDL_Rect mob_rect;
 
         switch (mobs[i].type) {
             case DRAGON:
-                mob_rect = (SDL_Rect){mobs[i].x - cameraX, mobs[i].y, mobs[i].width, mobs[i].height};
+                mob_rect = (SDL_Rect){mobs[i].x - cameraX, mobs[i].y - cameraY, mobs[i].width, mobs[i].height};
                 // SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Noir
                 // SDL_RenderFillRect(renderer, &mob_rect);
                 if (mobs[i].direction == 0) {
@@ -307,11 +305,17 @@ void render_mobs(SDL_Renderer *renderer, int cameraX) {
                 }
                 break;
             case PRINCESS:
-                mob_rect = (SDL_Rect){mobs[i].x - cameraX + (mobs[i].width - PLAYER_SPRITE_FRAME_WIDTH) / 2, mobs[i].y - (PLAYER_SPRITE_FRAME_HEIGHT - mobs[i].height) - 5, PLAYER_SPRITE_FRAME_WIDTH, PLAYER_SPRITE_FRAME_HEIGHT};
+                mob_rect = (SDL_Rect){mobs[i].x - cameraX + (mobs[i].width - PLAYER_SPRITE_FRAME_WIDTH) / 2, mobs[i].y - cameraY + (mobs[i].height - PLAYER_SPRITE_FRAME_HEIGHT) - 5, PLAYER_SPRITE_FRAME_WIDTH, PLAYER_SPRITE_FRAME_HEIGHT};
                 SDL_Rect princess_background_rect = {mob_rect.x, mob_rect.y, mob_rect.w, mob_rect.h};
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Noir
                 SDL_RenderFillRect(renderer, &princess_background_rect);
                 SDL_RenderCopy(renderer, mobs[i].texture, &mobs[i].clips[mobs[i].animation_row][mobs[i].current_frame], &mob_rect);
+                break;
+            case PESTYFLORE:
+                mob_rect = (SDL_Rect){mobs[i].x - cameraX, mobs[i].y - cameraY - TILE_SIZE, mobs[i].width * 2, mobs[i].height * 2};
+                // SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Rouge
+                // SDL_RenderFillRect(renderer, &mob_rect);
+                SDL_RenderCopy(renderer, mobs[i].texture, NULL, &mob_rect);
                 break;
             default:
                 break;
@@ -338,18 +342,54 @@ void render_coin_count(SDL_Renderer *renderer, Player *player) {
 
     int text_width = surface->w;
     int text_height = surface->h;
-    SDL_Rect dest = {WINDOW_WIDTH - text_width - 10, 10, text_width, text_height};
+    SDL_Rect dest = {WINDOW_WIDTH - text_width - 10, 2 * TILE_SIZE / 3, text_width, text_height};
 
-    SDL_Rect background_rect = {dest.x - 5, dest.y - 5, text_width + 10, text_height + 10};
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // noir
-    SDL_RenderFillRect(renderer, &background_rect);
+    // SDL_Rect background_rect = {dest.x - 5, dest.y - 5, text_width + 10, text_height + 10};
+    // SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // noir
+    // SDL_RenderFillRect(renderer, &background_rect);
 
+    int icon_size = 50;
+    SDL_Rect icon_dest = {WINDOW_WIDTH - text_width - icon_size - 20, TILE_SIZE / 3, icon_size, icon_size};
+    SDL_RenderCopy(renderer, coin_texture, NULL, &icon_dest);
     SDL_RenderCopy(renderer, texture, NULL, &dest);
 
     // vraiment besoin de libérer en boucle ??
     SDL_FreeSurface(surface);
     SDL_DestroyTexture(texture);
     TTF_CloseFont(font);
+}
+
+void render_player_life(SDL_Renderer *renderer, Player *player) {
+    SDL_Surface *heart_surface = IMG_Load("assets/images/heart.png");
+    if (!heart_surface) {
+        printf("Erreur IMG_Load: %s\n", IMG_GetError());
+        return;
+    }
+    SDL_Texture *heart_texture = SDL_CreateTextureFromSurface(renderer, heart_surface);
+    SDL_FreeSurface(heart_surface);
+
+    SDL_Surface *grey_heart_surface = IMG_Load("assets/images/grey-heart.png");
+    if (!grey_heart_surface) {
+        printf("Erreur IMG_Load: %s\n", IMG_GetError());
+        SDL_DestroyTexture(heart_texture);
+        return;
+    }
+    SDL_Texture *grey_heart_texture = SDL_CreateTextureFromSurface(renderer, grey_heart_surface);
+    SDL_FreeSurface(grey_heart_surface);
+
+    int heart_width = TILE_SIZE;
+    int heart_height = TILE_SIZE;
+    for (int i = 0; i < player->total_life_points; ++i) {
+        SDL_Rect heart_rect = {10 + i * (heart_width + 5), 10, heart_width, heart_height};
+        if (i < player->life_points) {
+            SDL_RenderCopy(renderer, heart_texture, NULL, &heart_rect);
+        } else {
+            SDL_RenderCopy(renderer, grey_heart_texture, NULL, &heart_rect);
+        }
+    }
+
+    SDL_DestroyTexture(heart_texture);
+    SDL_DestroyTexture(grey_heart_texture);
 }
 
 void display_in_game_menu(SDL_Renderer *renderer, Player *player, bool *return_to_main_menu, bool *quit_game , bool *resume_game) {
@@ -557,6 +597,7 @@ void start_game(SDL_Renderer *renderer) {
     }
 
     int cameraX = player.x - WINDOW_WIDTH / 2;
+    int cameraY = player.y - WINDOW_HEIGHT / 2;
 
     while (!quit_game && !return_to_main_menu) {
         Uint32 currentTime = SDL_GetTicks();
@@ -573,7 +614,7 @@ void start_game(SDL_Renderer *renderer) {
         }
 
         if (!in_game_menu) {
-            update_player(map->blocks, map->width, map->height, currentTime);
+            update_player(renderer, map->blocks, map->width, map->height, currentTime);
             update_mobs(currentTime);
             animate_mobs(map->width, map->height, currentTime);
 
@@ -583,13 +624,27 @@ void start_game(SDL_Renderer *renderer) {
                 cameraX -= SCROLL_SPEED;
             }
 
+            int targetCameraY = player.y - WINDOW_HEIGHT / 2;
+            if (targetCameraY < 0) {
+                cameraY = 0;
+            } else if (targetCameraY + WINDOW_HEIGHT > WORLD_HEIGHT) {
+                cameraY = WORLD_HEIGHT - WINDOW_HEIGHT;
+            } else {
+                cameraY = targetCameraY;
+            }
+
+            if (abs(cameraY - targetCameraY) < 1) {
+                cameraY = targetCameraY;
+            }
+
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             SDL_RenderClear(renderer);
 
             if (player.life_points > 0) {
-                render_map(renderer, map, cameraX);
-                render_player(renderer, cameraX);
-                render_mobs(renderer, cameraX);
+                render_map(renderer, map, cameraX, cameraY);
+                render_player(renderer, cameraX, cameraY);
+                render_player_life(renderer, &player);
+                render_mobs(renderer, cameraX, cameraY);
                 render_coin_count(renderer, &player);
             } else {
                 display_in_game_menu(renderer, &player, &return_to_main_menu, &quit_game, &resume_game);
