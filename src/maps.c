@@ -284,8 +284,8 @@ Map* load_map(const char *filename) {
                     player.y_speed = 0;
                     player.lastJump_t = 0;
                     player.lastHit_t = 0;
-                    player.life_points = 4;
-                    player.total_life_points = 4;
+                    player.life_points = 3;
+                    player.total_life_points = 3;
                     player.coins_count = 0;
                     player.animation_row = IDLE;
                     player.texture = player_texture;

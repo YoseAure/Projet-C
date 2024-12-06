@@ -2,7 +2,6 @@
 #define STRUCTS_H
 
 #include <SDL2/SDL.h>
-#include <stdbool.h> // Ajoutez cette ligne pour utiliser le type bool
 #include "constants.h"
 
 typedef struct {
