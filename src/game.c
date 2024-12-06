@@ -25,6 +25,9 @@ Player player;
 
 bool keys[SDL_NUM_SCANCODES] = {false};
 
+Inventory player_inventory = { .item_count = 0 };
+bool show_inventory = false;
+
 void reset_game_state() {
     mob_count = 0;
     for (int i = 0; i < MAX_MOBS; i++) {
@@ -57,6 +60,9 @@ bool checkCollision(Player *player, SDL_Rect *obs) {
 void handle_input(SDL_Event *e) {
     if (e->type == SDL_KEYDOWN) {
         keys[e->key.keysym.scancode] = true;
+        if (e->key.keysym.scancode == SDL_SCANCODE_I) {
+            show_inventory = !show_inventory;
+        }
     } else if (e->type == SDL_KEYUP) {
         keys[e->key.keysym.scancode] = false;
     }
@@ -646,6 +652,9 @@ void start_game(SDL_Renderer *renderer) {
                 render_player_life(renderer, &player);
                 render_mobs(renderer, cameraX, cameraY);
                 render_coin_count(renderer, &player);
+                if (show_inventory) {
+                    render_inventory(renderer, &player_inventory);
+                }
             } else {
                 display_in_game_menu(renderer, &player, &return_to_main_menu, &quit_game, &resume_game);
             }
@@ -671,4 +680,44 @@ void start_game(SDL_Renderer *renderer) {
     }
 
     free_block_textures();
+}
+
+void render_inventory(SDL_Renderer *renderer, Inventory *inventory) {
+    int inventory_size = 3;
+    int item_size = 64;
+    int padding = 10;
+    int start_x = (WINDOW_WIDTH - (inventory_size * item_size + (inventory_size - 1) * padding)) / 2;
+    int start_y = (WINDOW_HEIGHT - (inventory_size * item_size + (inventory_size - 1) * padding)) / 2;
+
+    // Dessiner le fond noir de l'inventaire
+    SDL_Rect background_rect = {start_x - padding, start_y - padding, inventory_size * (item_size + padding) - padding, inventory_size * (item_size + padding) - padding};
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Noir
+    SDL_RenderFillRect(renderer, &background_rect);
+
+    // Dessiner les cases blanches
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // Blanc
+    for (int i = 0; i < inventory_size; ++i) {
+        for (int j = 0; j < inventory_size; ++j) {
+            SDL_Rect cell_rect = {
+                start_x + j * (item_size + padding),
+                start_y + i * (item_size + padding),
+                item_size,
+                item_size
+            };
+            SDL_RenderDrawRect(renderer, &cell_rect);
+        }
+    }
+
+    // Afficher les items
+    for (int i = 0; i < inventory->item_count; ++i) {
+        int row = i / inventory_size;
+        int col = i % inventory_size;
+        SDL_Rect item_rect = {
+            start_x + col * (item_size + padding),
+            start_y + row * (item_size + padding),
+            item_size,
+            item_size
+        };
+        SDL_RenderCopy(renderer, inventory->items[i].texture, NULL, &item_rect);
+    }
 }

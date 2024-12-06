@@ -68,4 +68,13 @@ typedef enum {
 #define  DRAGON_SPRITE_COLS 9
 #define  DRAGON_SPEED 10
 
+
+// Items
+#define MAX_ITEMS 10
+
+// Inventory
+#define INVENTORY_DEFINED
+#define INVENTORY_SIZE 3
+
+
 #endif // CONSTANTS_H

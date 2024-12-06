@@ -2,6 +2,7 @@
 #define STRUCTS_H
 
 #include <SDL2/SDL.h>
+#include <stdbool.h> // Ajoutez cette ligne pour utiliser le type bool
 #include "constants.h"
 
 typedef struct {
@@ -31,7 +32,6 @@ typedef struct {
     int current_frame;
 } Player;
 
-
 typedef struct {
     int x, y, width, height;
     int x_speed, y_speed;
@@ -43,5 +43,15 @@ typedef struct {
     int current_frame;
     int direction;
 } Mob;
+
+typedef struct {
+    char name[50];
+    SDL_Texture *texture;
+} Item;
+
+typedef struct {
+    Item items[MAX_ITEMS];
+    int item_count;
+} Inventory;
 
 #endif // STRUCTS_H
