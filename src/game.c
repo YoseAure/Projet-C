@@ -710,13 +710,34 @@ void render_inventory(SDL_Renderer *renderer, Inventory *inventory) {
     int inventory_size = 3;
     int item_size = 64;
     int padding = 10;
+    int background_padding = 30; // Ajout d'un padding supplémentaire pour le fond
     int start_x = (WINDOW_WIDTH - (inventory_size * item_size + (inventory_size - 1) * padding)) / 2;
     int start_y = (WINDOW_HEIGHT - (inventory_size * item_size + (inventory_size - 1) * padding)) / 2;
 
-    // Dessiner le fond noir de l'inventaire
-    SDL_Rect background_rect = {start_x - padding, start_y - padding, inventory_size * (item_size + padding) - padding, inventory_size * (item_size + padding) - padding};
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Noir
+    // Dessiner le fond gris foncé de l'inventaire avec un padding supplémentaire
+    SDL_Rect background_rect = {
+        start_x - background_padding,
+        start_y - background_padding,
+        inventory_size * (item_size + padding) - padding + 2 * background_padding,
+        inventory_size * (item_size + padding) - padding + 2 * background_padding
+    };
+    SDL_SetRenderDrawColor(renderer, 50, 50, 50, 255); // Gris foncé
     SDL_RenderFillRect(renderer, &background_rect);
+
+    // Dessiner le texte "Inventaire"
+    TTF_Font *font = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 24);
+    if (!font) {
+        printf("Erreur TTF_OpenFont: %s\n", TTF_GetError());
+        return;
+    }
+    SDL_Color white = {255, 255, 255, 255};
+    SDL_Surface *surface = TTF_RenderText_Solid(font, "Inventaire", white);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Rect text_rect = {start_x - background_padding - -5, start_y - background_padding - 1, surface->w, surface->h};
+    SDL_RenderCopy(renderer, texture, NULL, &text_rect);
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
+    TTF_CloseFont(font);
 
     // Dessiner les cases blanches
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // Blanc
