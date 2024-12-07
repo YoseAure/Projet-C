@@ -27,6 +27,10 @@ bool keys[SDL_NUM_SCANCODES] = {false};
 
 Inventory player_inventory = { .item_count = 0 };
 bool show_inventory = false;
+bool new_map = false;
+
+int current_level = 1;
+int current_map = 0;
 
 void reset_game_state() {
     mob_count = 0;
@@ -79,7 +83,7 @@ SDL_Texture* load_texture(const char *file, SDL_Renderer *renderer) {
     return texture;
 }
 
-void update_player(SDL_Renderer *renderer, Block **map, int width, int height, Uint32 currentTime) {
+void update_player(SDL_Renderer *renderer, Map *map, int width, int height, Uint32 currentTime, bool *quit_game) {
     bool moving = false;
 
     if (mario_gameType && !pokemon_gameType) {
@@ -92,8 +96,8 @@ void update_player(SDL_Renderer *renderer, Block **map, int width, int height, U
         bool canMove = true;
         for (int i = 0; i < height; ++i) {
             for (int j = 0; j < width; ++j) {
-                if (map[i][j].isSolid) {
-                    SDL_Rect obs = { map[i][j].x, map[i][j].y, map[i][j].width, map[i][j].height };
+                if (map->blocks[i][j].isSolid) {
+                    SDL_Rect obs = { map->blocks[i][j].x, map->blocks[i][j].y, map->blocks[i][j].width, map->blocks[i][j].height };
                     if (player.x - MOVEMENT_SPEED < obs.x + obs.w &&
                         player.x + player.width - MOVEMENT_SPEED > obs.x &&
                         player.y + player.height > obs.y && player.y < obs.y + obs.h) {
@@ -114,8 +118,8 @@ void update_player(SDL_Renderer *renderer, Block **map, int width, int height, U
         bool canMove = true;
         for (int i = 0; i < height; ++i) {
             for (int j = 0; j < width; ++j) {
-                if (map[i][j].isSolid) {
-                    SDL_Rect obs = { map[i][j].x, map[i][j].y, map[i][j].width, map[i][j].height };
+                if (map->blocks[i][j].isSolid) {
+                    SDL_Rect obs = { map->blocks[i][j].x, map->blocks[i][j].y, map->blocks[i][j].width, map->blocks[i][j].height };
                     if (player.x + player.width + MOVEMENT_SPEED > obs.x &&
                         player.x + MOVEMENT_SPEED < obs.x + obs.w &&
                         player.y + player.height > obs.y && player.y < obs.y + obs.h) {
@@ -137,8 +141,8 @@ void update_player(SDL_Renderer *renderer, Block **map, int width, int height, U
             bool canMove = true;
             for (int i = 0; i < height; ++i) {
                 for (int j = 0; j < width; ++j) {
-                    if (map[i][j].isSolid) {
-                        SDL_Rect obs = { map[i][j].x, map[i][j].y, map[i][j].width, map[i][j].height };
+                    if (map->blocks[i][j].isSolid) {
+                        SDL_Rect obs = { map->blocks[i][j].x, map->blocks[i][j].y, map->blocks[i][j].width, map->blocks[i][j].height };
                         if (player.y - MOVEMENT_SPEED < obs.y + obs.h &&
                             player.y + player.height - MOVEMENT_SPEED > obs.y &&
                             player.x + player.width > obs.x && player.x < obs.x + obs.w) {
@@ -159,8 +163,8 @@ void update_player(SDL_Renderer *renderer, Block **map, int width, int height, U
             bool canMove = true;
             for (int i = 0; i < height; ++i) {
                 for (int j = 0; j < width; ++j) {
-                    if (map[i][j].isSolid) {
-                        SDL_Rect obs = { map[i][j].x, map[i][j].y, map[i][j].width, map[i][j].height };
+                    if (map->blocks[i][j].isSolid) {
+                        SDL_Rect obs = { map->blocks[i][j].x, map->blocks[i][j].y, map->blocks[i][j].width, map->blocks[i][j].height };
                         if (player.y + player.height + MOVEMENT_SPEED > obs.y &&
                             player.y + MOVEMENT_SPEED < obs.y + obs.h &&
                             player.x + player.width > obs.x && player.x < obs.x + obs.w) {
@@ -196,8 +200,8 @@ void update_player(SDL_Renderer *renderer, Block **map, int width, int height, U
         bool onGround = false;
         for (int i = 0; i < height; ++i) {
             for (int j = 0; j < width; ++j) {
-                if (map[i][j].isSolid) {
-                    SDL_Rect obs = { map[i][j].x, map[i][j].y, map[i][j].width, map[i][j].height };
+                if (map->blocks[i][j].isSolid) {
+                    SDL_Rect obs = { map->blocks[i][j].x, map->blocks[i][j].y, map->blocks[i][j].width, map->blocks[i][j].height };
                     if (checkCollision(&player, &obs)) {
                         if (player.y_speed > 0) {
                             player.y = obs.y - player.height;
@@ -210,23 +214,23 @@ void update_player(SDL_Renderer *renderer, Block **map, int width, int height, U
                         }
                     }
                 }
-                SDL_Rect obs = { map[i][j].x, map[i][j].y, map[i][j].width, map[i][j].height };
-                if (map[i][j].type == ENEMY && checkCollision(&player, &obs)) {
+                SDL_Rect obs = { map->blocks[i][j].x, map->blocks[i][j].y, map->blocks[i][j].width, map->blocks[i][j].height };
+                if (map->blocks[i][j].type == ENEMY && checkCollision(&player, &obs)) {
                     if (currentTime - player.lastHit_t >= 1000) {
                         player.lastHit_t = currentTime;
                         player.life_points--;
                     }
-                } else if (map[i][j].type == COIN && checkCollision(&player, &obs)) {
+                } else if (map->blocks[i][j].type == COIN && checkCollision(&player, &obs)) {
                     player.coins_count++;
-                    map[i][j].type = EMPTY;
-                } else if (map[i][j].type == SOCKS && checkCollision(&player, &obs)) {
+                    map->blocks[i][j].type = EMPTY;
+                } else if (map->blocks[i][j].type == SOCKS && checkCollision(&player, &obs)) {
                     if (player_inventory.item_count < MAX_ITEMS) {
                         SDL_Texture *socks_texture = load_texture("assets/images/socks.png", renderer);
                         if (socks_texture) {
                             Item socks = { "Socks", socks_texture };
                             player_inventory.items[player_inventory.item_count] = socks;
                             player_inventory.item_count++;
-                            map[i][j].type = EMPTY;
+                            map->blocks[i][j].type = EMPTY;
                         }
                     }
                 }
@@ -250,6 +254,68 @@ void update_player(SDL_Renderer *renderer, Block **map, int width, int height, U
             player.y_speed = 0;
         } else {
             player.isJumping = true;
+        }
+    }
+
+    for (int i = 0; i < height; ++i) {
+        for (int j = 0; j < width; ++j) {
+            SDL_Rect obs = { map->blocks[i][j].x, map->blocks[i][j].y, map->blocks[i][j].width, map->blocks[i][j].height };
+            if (checkCollision(&player, &obs)) {
+                switch (map->blocks[i][j].type) {
+                    case NEXT_MAP:
+                        current_map++;
+                        new_map = true;
+                        if (current_map > 0) {
+                            pokemon_gameType = true;
+                            mario_gameType = false;
+                        } else {
+                            pokemon_gameType = false;
+                            mario_gameType = true;
+                        }
+                        *quit_game = true;
+                        break;
+                    case NEXT_LEVEL:
+                        current_level++;
+                        current_map = 0;
+                        new_map = true;
+                        if (current_map > 0) {
+                            pokemon_gameType = true;
+                            mario_gameType = false;
+                        } else {
+                            pokemon_gameType = false;
+                            mario_gameType = true;
+                        }
+                        *quit_game = true;
+                        break;
+                    case PREVIOUS_MAP:
+                        current_map--;
+                        new_map = true;
+                        if (current_map > 0) {
+                            pokemon_gameType = true;
+                            mario_gameType = false;
+                        } else {
+                            pokemon_gameType = false;
+                            mario_gameType = true;
+                        }
+                        *quit_game = true;
+                        break;
+                    case PREVIOUS_LEVEL:
+                        current_level--;
+                        current_map = 0;
+                        new_map = true;
+                        if (current_map > 0) {
+                            pokemon_gameType = true;
+                            mario_gameType = false;
+                        } else {
+                            pokemon_gameType = false;
+                            mario_gameType = true;
+                        }
+                        *quit_game = true;
+                        break;
+                    default:
+                        break;
+                }
+            }
         }
     }
 
@@ -619,7 +685,7 @@ void start_game(SDL_Renderer *renderer) {
     reset_game_state();
     reset_keys();
 
-    Map *map = load_map("assets/maps/map-1.0.txt");
+    Map *map = load_map();
     if (!map) {
         printf("Erreur lors du chargement de la carte\n");
         return;
@@ -651,7 +717,7 @@ void start_game(SDL_Renderer *renderer) {
         if (!in_game_menu) {
             update_mobs(currentTime);
             animate_mobs(map->width, map->height, currentTime);
-            update_player(renderer, map->blocks, map->width, map->height, currentTime);
+            update_player(renderer, map, map->width, map->height, currentTime, &quit_game);
 
             if (player.x > cameraX + WINDOW_WIDTH / 2 && cameraX + WINDOW_WIDTH < WORLD_WIDTH) {
                 cameraX += SCROLL_SPEED;
@@ -676,12 +742,13 @@ void start_game(SDL_Renderer *renderer) {
             SDL_RenderClear(renderer);
 
             if (player.life_points > 0) {
-                render_map(renderer, map, cameraX, cameraY);
+                if (pokemon_gameType) {
+                    render_map(renderer, map, cameraX, cameraY, true);
+                }
+                render_map(renderer, map, cameraX, cameraY, false);
                 render_mobs(renderer, cameraX, cameraY);
                 render_player(renderer, cameraX, cameraY);
-                render_coin_count(renderer, &player);
                 render_player_life(renderer, &player);
-                render_mobs(renderer, cameraX, cameraY);
                 render_coin_count(renderer, &player);
                 if (show_inventory) {
                     render_inventory(renderer, &player_inventory);
@@ -702,10 +769,15 @@ void start_game(SDL_Renderer *renderer) {
         SDL_Delay(16); // ~60 fps
     }
 
-    if (return_to_main_menu) {
+    if (return_to_main_menu && !new_map) {
         return_to_main_menu = false;
         reset_map(&map);
         display_main_menu(renderer);
+    } else if (new_map) {
+        new_map = false;
+        init_map(map);
+        reset_map(&map);
+        start_game(renderer);
     } else {
         free_map(map);
     }

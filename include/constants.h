@@ -33,7 +33,13 @@ typedef enum {
     GRASS,
     EARTH,
     WATER,
-    SOCKS
+    SOCKS,
+    PLANCHER,
+    PONTON,
+    NEXT_MAP,
+    NEXT_LEVEL,
+    PREVIOUS_MAP,
+    PREVIOUS_LEVEL
 } BlockType;
 
 typedef enum {

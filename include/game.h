@@ -21,5 +21,6 @@ void render_player(SDL_Renderer *renderer, int cameraX, int cameraY);
 void render_mobs(SDL_Renderer *renderer, int cameraX, int cameraY);
 void animate_mobs(int width, int height, Uint32 currentTime);
 void update_mobs(Uint32 currentTime);
+void update_player(SDL_Renderer *renderer, Map *map, int width, int height, Uint32 currentTime, bool *quit_game);
 
 #endif // GAME_H
