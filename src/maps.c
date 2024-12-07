@@ -148,7 +148,7 @@ bool load_block_textures(SDL_Renderer *renderer) {
         return false;
     }
 
-    store_texture = IMG_LoadTexture(renderer, "../assets/images/speech_bubble.png");
+    store_texture = IMG_LoadTexture(renderer, "../assets/images/surfeur_surfshop.png");
     if (!store_texture) {
         printf("Error loading store texture: %s\n", SDL_GetError());
         return false;
@@ -514,7 +514,7 @@ Map* load_map(const char *filename) {
                     break;
                 case 'M':
                     map->blocks[row][col].width = TILE_SIZE * 1.5;
-                    map->blocks[row][col].height = TILE_SIZE * 1.5;
+                    map->blocks[row][col].height = TILE_SIZE * 2;
                     map->blocks[row][col].type = STORE;
                     map->blocks[row][col].isSolid = false;
                     break;

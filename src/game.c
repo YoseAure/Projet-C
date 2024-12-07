@@ -98,16 +98,24 @@ void render_speech_bubble(SDL_Renderer *renderer, const char *message) {
     int text_height = surface->h;
     SDL_Rect dest = { (WINDOW_WIDTH - text_width) / 2, (WINDOW_HEIGHT - text_height) / 2, text_width, text_height };
 
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // Blanc
-    SDL_Rect background_rect = { dest.x - 10, dest.y - 10, text_width + 20, text_height + 20 };
-    SDL_RenderFillRect(renderer, &background_rect);
+    SDL_Texture *bubble_texture = load_texture("assets/images/speech_bubble.png", renderer);
+    if (!bubble_texture) {
+        printf("Erreur lors du chargement de l'image de la bulle de dialogue\n");
+        SDL_FreeSurface(surface);
+        SDL_DestroyTexture(texture);
+        TTF_CloseFont(font);
+        return;
+    }
+
+    SDL_Rect background_rect = { dest.x - 25, dest.y - 10, text_width + 80, text_height + 70 }; // Augmentez la largeur de l'image
+    SDL_RenderCopy(renderer, bubble_texture, NULL, &background_rect);
 
     SDL_RenderCopy(renderer, texture, NULL, &dest);
 
     SDL_FreeSurface(surface);
     SDL_DestroyTexture(texture);
+    SDL_DestroyTexture(bubble_texture);
     TTF_CloseFont(font);
-    
 }
 
 void update_player(SDL_Renderer *renderer, Block **map, int width, int height, Uint32 currentTime) {
@@ -676,9 +684,9 @@ void start_game(SDL_Renderer *renderer) {
                             player.coins_count -= 4;
                             surfboard = true;
                         } else if (player.coins_count < 4) {
-                            speech_index ++;
+                            speech_index++;
                         }
-                    }else if (speech_index == 3) {
+                    } else if (speech_index == 3) {
                         start_speech = false;
                     } else {
                         speech_index++;
@@ -729,7 +737,7 @@ void start_game(SDL_Renderer *renderer) {
                     render_inventory(renderer, &player_inventory);
                 }
                 if (start_speech) {
-                    render_speech_bubble(renderer, dialogue[speech_index]);
+                    render_speech_bubble(renderer, dialogue[speech_index]); // Affiche le dialogue au centre de l'écran
                 }
                 if (surfboard && player_inventory.item_count < MAX_ITEMS) {
                     SDL_Texture *surf_texture = load_texture("assets/images/surf.png", renderer);
