@@ -26,6 +26,8 @@ Player player;
 bool keys[SDL_NUM_SCANCODES] = {false};
 
 Inventory player_inventory = { .item_count = 0 };
+
+bool quit_game = false;
 bool show_inventory = false;
 bool new_map = false;
 
@@ -83,7 +85,7 @@ SDL_Texture* load_texture(const char *file, SDL_Renderer *renderer) {
     return texture;
 }
 
-void update_player(SDL_Renderer *renderer, Map *map, int width, int height, Uint32 currentTime, bool *quit_game) {
+void update_player(SDL_Renderer *renderer, Map *map, int width, int height, Uint32 currentTime) {
     bool moving = false;
 
     if (mario_gameType && !pokemon_gameType) {
@@ -272,7 +274,7 @@ void update_player(SDL_Renderer *renderer, Map *map, int width, int height, Uint
                             pokemon_gameType = false;
                             mario_gameType = true;
                         }
-                        *quit_game = true;
+                        // quit_game = true;
                         break;
                     case NEXT_LEVEL:
                         current_level++;
@@ -285,7 +287,7 @@ void update_player(SDL_Renderer *renderer, Map *map, int width, int height, Uint
                             pokemon_gameType = false;
                             mario_gameType = true;
                         }
-                        *quit_game = true;
+                        // quit_game = true;
                         break;
                     case PREVIOUS_MAP:
                         current_map--;
@@ -297,7 +299,7 @@ void update_player(SDL_Renderer *renderer, Map *map, int width, int height, Uint
                             pokemon_gameType = false;
                             mario_gameType = true;
                         }
-                        *quit_game = true;
+                        // quit_game = true;
                         break;
                     case PREVIOUS_LEVEL:
                         current_level--;
@@ -310,7 +312,7 @@ void update_player(SDL_Renderer *renderer, Map *map, int width, int height, Uint
                             pokemon_gameType = false;
                             mario_gameType = true;
                         }
-                        *quit_game = true;
+                        // quit_game = true;
                         break;
                     default:
                         break;
@@ -485,7 +487,7 @@ void render_player_life(SDL_Renderer *renderer, Player *player) {
     SDL_DestroyTexture(grey_heart_texture);
 }
 
-void display_in_game_menu(SDL_Renderer *renderer, Player *player, bool *return_to_main_menu, bool *quit_game , bool *resume_game) {
+void display_in_game_menu(SDL_Renderer *renderer, Player *player, bool *return_to_main_menu , bool *resume_game) {
     TTF_Font *font = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 32);
     TTF_Font *font_large = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 36);
     TTF_Font *title_font = TTF_OpenFont("assets/fonts/mario-font-2.ttf", 72);
@@ -574,7 +576,7 @@ void display_in_game_menu(SDL_Renderer *renderer, Player *player, bool *return_t
                                 settings(renderer);
                             } else {
                                 *return_to_main_menu = true;
-                                *quit_game = true;
+                                quit_game = true;
                                 exit_program = true;
                                 quit = true;
                             }
@@ -669,8 +671,31 @@ void update_mobs(Uint32 currentTime) {
     }
 }
 
+void render_fade(SDL_Renderer *renderer, int alpha) {
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, alpha);
+    SDL_RenderFillRect(renderer, NULL);
+}
+
+void blacken(SDL_Renderer *renderer, int duration) {
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_Rect rect = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 85);
+    for (int i = 0; i < duration; i++) {
+        SDL_RenderFillRect(renderer, &rect);
+        SDL_RenderPresent(renderer);
+        SDL_Delay(10);
+    }
+}
+
+void blackout(SDL_Renderer *renderer) {
+    blacken(renderer, 25);
+}
+
+void dim(SDL_Renderer *renderer) {
+    blacken(renderer, 10);
+}
+
 void start_game(SDL_Renderer *renderer) {
-    bool quit_game = false;
     bool return_to_main_menu = false;
     bool in_game_menu = false;
     bool resume_game = false;
@@ -715,9 +740,25 @@ void start_game(SDL_Renderer *renderer) {
         }
 
         if (!in_game_menu) {
+            if (new_map) {
+                blackout(renderer);
+                reset_game_state();
+                reset_keys();
+                new_map = false;
+                free_map(map);
+                map = load_map();
+                if (!map) {
+                    printf("Erreur lors du chargement de la carte\n");
+                    return;
+                }
+                cameraX = player.x - WINDOW_WIDTH / 2;
+                cameraY = player.y - WINDOW_HEIGHT / 2;
+
+                dim(renderer);
+            }
             update_mobs(currentTime);
             animate_mobs(map->width, map->height, currentTime);
-            update_player(renderer, map, map->width, map->height, currentTime, &quit_game);
+            update_player(renderer, map, map->width, map->height, currentTime);
 
             if (player.x > cameraX + WINDOW_WIDTH / 2 && cameraX + WINDOW_WIDTH < WORLD_WIDTH) {
                 cameraX += SCROLL_SPEED;
@@ -742,10 +783,7 @@ void start_game(SDL_Renderer *renderer) {
             SDL_RenderClear(renderer);
 
             if (player.life_points > 0) {
-                if (pokemon_gameType) {
-                    render_map(renderer, map, cameraX, cameraY, true);
-                }
-                render_map(renderer, map, cameraX, cameraY, false);
+                render_map(renderer, map, cameraX, cameraY);
                 render_mobs(renderer, cameraX, cameraY);
                 render_player(renderer, cameraX, cameraY);
                 render_player_life(renderer, &player);
@@ -754,14 +792,13 @@ void start_game(SDL_Renderer *renderer) {
                     render_inventory(renderer, &player_inventory);
                 }
             } else {
-                display_in_game_menu(renderer, &player, &return_to_main_menu, &quit_game, &resume_game);
+                display_in_game_menu(renderer, &player, &return_to_main_menu, &resume_game);
             }
         } else {
-            display_in_game_menu(renderer, &player, &return_to_main_menu, &quit_game, &resume_game);
+            display_in_game_menu(renderer, &player, &return_to_main_menu, &resume_game);
             if (resume_game) {
                 in_game_menu = false;
                 resume_game = false;
-
             }
         }
 
@@ -769,19 +806,7 @@ void start_game(SDL_Renderer *renderer) {
         SDL_Delay(16); // ~60 fps
     }
 
-    if (return_to_main_menu && !new_map) {
-        return_to_main_menu = false;
-        reset_map(&map);
-        display_main_menu(renderer);
-    } else if (new_map) {
-        new_map = false;
-        init_map(map);
-        reset_map(&map);
-        start_game(renderer);
-    } else {
-        free_map(map);
-    }
-
+    free_map(map);
     free_block_textures();
 }
 
@@ -843,7 +868,7 @@ void render_inventory(SDL_Renderer *renderer, Inventory *inventory) {
     }
 }
 
-void display_game_over_menu(SDL_Renderer *renderer, Player *player, bool *return_to_main_menu, bool *quit_game) {
+void display_game_over_menu(SDL_Renderer *renderer, Player *player, bool *return_to_main_menu) {
     TTF_Font *font = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 32);
     TTF_Font *font_large = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 36);
     TTF_Font *title_font = TTF_OpenFont("assets/fonts/mario-font-2.ttf", 72);
@@ -913,7 +938,7 @@ void display_game_over_menu(SDL_Renderer *renderer, Player *player, bool *return
                             *return_to_main_menu = true;
                             quit = true;
                         } else if (selected == 2) {
-                            *quit_game = true;
+                            quit_game = true;
                             exit_program = true;
                             quit = true;
                         }

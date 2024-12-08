@@ -21,7 +21,7 @@ bool init_sdl(SDL_Window **window, SDL_Renderer **renderer, Mix_Music **backgrou
         return false;
     }
 
-    *background_music = Mix_LoadMUS("assets/audio/background-music-1.mp3");
+    *background_music = Mix_LoadMUS("assets/audio/background-music-2.mp3");
     if (!*background_music) {
         printf("Erreur Mix_LoadMUS: %s\n", Mix_GetError());
         Mix_CloseAudio();

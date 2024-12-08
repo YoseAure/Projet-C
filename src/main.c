@@ -9,6 +9,12 @@
 
 bool exit_program = false;
 
+typedef enum {
+    MAIN_MENU,
+    IN_GAME,
+    EXIT
+} GameState;
+
 int main(int argc, char *argv[]) {
     SDL_Window *window = NULL;
     SDL_Renderer *renderer = NULL;
@@ -18,8 +24,30 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    while (!exit_program) {
-        display_main_menu(renderer);
+    GameState game_state = MAIN_MENU;
+
+    while (game_state != EXIT) {
+        switch (game_state) {
+            case MAIN_MENU:
+                display_main_menu(renderer);
+                if (exit_program) {
+                    game_state = EXIT;
+                } else {
+                    game_state = IN_GAME;
+                }
+                break;
+            case IN_GAME:
+                start_game(renderer);
+                if (exit_program) {
+                    game_state = EXIT;
+                } else {
+                    game_state = MAIN_MENU;
+                }
+                break;
+            default:
+                game_state = EXIT;
+                break;
+        }
     }
 
     cleanup_sdl(window, renderer, background_music);

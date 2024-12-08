@@ -481,6 +481,10 @@ Map* load_map() {
                     map->blocks[row][col].height = TILE_SIZE * 6;
                     map->blocks[row][col].width = TILE_SIZE * 6;
                     break;
+                case 'h':
+                    map->blocks[row][col].type = HOUSE;
+                    map->blocks[row][col].isSolid = true;
+                    break;
                 case 'c':
                     map->blocks[row][col].type = CHEST;
                     map->blocks[row][col].isSolid = true;
@@ -564,7 +568,7 @@ void free_map(Map *map) {
     free(map);
 }
 
-void render_map(SDL_Renderer *renderer, Map *map, int cameraX, int cameraY, bool grass_layer) {
+void render_map(SDL_Renderer *renderer, Map *map, int cameraX, int cameraY) {
     /*
     TODO: ajouter variable i et j pour charger les différentes map
     i : numéro du niveau
@@ -591,81 +595,81 @@ void render_map(SDL_Renderer *renderer, Map *map, int cameraX, int cameraY, bool
         }
    }
 
-    if (pokemon_gameType && current_map == 2) {
+   if (pokemon_gameType && current_map == 1) {
+       SDL_SetRenderDrawColor(renderer, 156, 219, 67, 255);
+       SDL_RenderClear(renderer);
+    } else if (pokemon_gameType && current_map == 2) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
     }
+
     for (int i = 0; i < map->height; ++i) {
         for (int j = 0; j < map->width; ++j) {
             SDL_Rect rect = { map->blocks[i][j].x - cameraX, map->blocks[i][j].y - cameraY, map->blocks[i][j].width, map->blocks[i][j].height };
-            if (grass_layer) {
-                SDL_RenderCopy(renderer, ground_tileset_texture, &texture_info[6].clip, &rect);
-            } else {
-                switch (map->blocks[i][j].type) {
-                    case WATER:
-                        SDL_RenderCopy(renderer, ground_tileset_texture, &texture_info[5].clip, &rect);
-                        break;
-                    case GROUND:
-                        SDL_RenderCopy(renderer, ground_tileset_texture, &texture_info[7].clip, &rect);
-                        break;
-                    case BRICK:
-                        SDL_RenderCopy(renderer, ground_tileset_texture, &texture_info[8].clip, &rect);
-                        break;
-                    case PILAR:
-                        SDL_RenderCopy(renderer, pilar_texture, NULL, &rect);
-                        break;
-                    case TORCH:
-                        SDL_RenderCopy(renderer, torch_texture, NULL, &rect);
-                        break;
-                    case SAPIN:
-                        rect.w = TILE_SIZE * 2;
-                        rect.h = TILE_SIZE * 4;
-                        SDL_RenderCopy(renderer, tileset_texture, &texture_info[0].clip, &rect);
-                        break;
-                    case HOUSE:
-                        rect.w = TILE_SIZE * 6;
-                        rect.h = TILE_SIZE * 6;
-                        SDL_RenderCopy(renderer, tileset_texture, &texture_info[1].clip, &rect);
-                        break;
-                    case CHEST:
-                        SDL_RenderCopy(renderer, tileset_texture, &texture_info[2].clip, &rect);
-                        break;
-                    case ROCK:
-                        SDL_RenderCopy(renderer, tileset_texture, &texture_info[3].clip, &rect);
-                        break;
-                    case RED_FLAG:
-                        SDL_RenderCopy(renderer, redFlag_texture, NULL, &rect);
-                        break;
-                    case COIN:
-                        SDL_RenderCopy(renderer, coin_texture, NULL, &rect);
-                        break;
-                    case BLACK:
-                        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-                        SDL_RenderFillRect(renderer, &rect);
-                        break;
-                    case PANEL:
-                        SDL_RenderCopy(renderer, tileset_texture, &texture_info[4].clip, &rect);
-                        break;
-                    case GRASS:
-                        SDL_RenderCopy(renderer, ground_tileset_texture, &texture_info[6].clip, &rect);
-                        break;
-                    case EARTH:
-                        SDL_RenderCopy(renderer, ground_tileset_texture, &texture_info[8].clip, &rect);
-                        break;
-                    case SOCKS:
-                        SDL_RenderCopy(renderer, socks_texture, NULL, &rect);
-                        break;
-                    case PLANCHER:
-                        SDL_RenderCopy(renderer, tileset_texture, &texture_info[9].clip, &rect);
-                        break;
-                    case PONTON:
-                        SDL_RenderCopy(renderer, tileset_texture, &texture_info[10].clip, &rect);
-                        break;
-                    case INVISIBLE:
-                    case EMPTY:
-                    default:
-                        break;
-                }
+            switch (map->blocks[i][j].type) {
+                case WATER:
+                    SDL_RenderCopy(renderer, ground_tileset_texture, &texture_info[5].clip, &rect);
+                    break;
+                case GROUND:
+                    SDL_RenderCopy(renderer, ground_tileset_texture, &texture_info[7].clip, &rect);
+                    break;
+                case BRICK:
+                    SDL_RenderCopy(renderer, ground_tileset_texture, &texture_info[8].clip, &rect);
+                    break;
+                case PILAR:
+                    SDL_RenderCopy(renderer, pilar_texture, NULL, &rect);
+                    break;
+                case TORCH:
+                    SDL_RenderCopy(renderer, torch_texture, NULL, &rect);
+                    break;
+                case SAPIN:
+                    rect.w = TILE_SIZE * 2;
+                    rect.h = TILE_SIZE * 4;
+                    SDL_RenderCopy(renderer, tileset_texture, &texture_info[0].clip, &rect);
+                    break;
+                case HOUSE:
+                    rect.w = TILE_SIZE * 6;
+                    rect.h = TILE_SIZE * 6;
+                    SDL_RenderCopy(renderer, tileset_texture, &texture_info[1].clip, &rect);
+                    break;
+                case CHEST:
+                    SDL_RenderCopy(renderer, tileset_texture, &texture_info[2].clip, &rect);
+                    break;
+                case ROCK:
+                    SDL_RenderCopy(renderer, tileset_texture, &texture_info[3].clip, &rect);
+                    break;
+                case RED_FLAG:
+                    SDL_RenderCopy(renderer, redFlag_texture, NULL, &rect);
+                    break;
+                case COIN:
+                    SDL_RenderCopy(renderer, coin_texture, NULL, &rect);
+                    break;
+                case BLACK:
+                    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+                    SDL_RenderFillRect(renderer, &rect);
+                    break;
+                case PANEL:
+                    SDL_RenderCopy(renderer, tileset_texture, &texture_info[4].clip, &rect);
+                    break;
+                case GRASS:
+                    SDL_RenderCopy(renderer, ground_tileset_texture, &texture_info[6].clip, &rect);
+                    break;
+                case EARTH:
+                    SDL_RenderCopy(renderer, ground_tileset_texture, &texture_info[8].clip, &rect);
+                    break;
+                case SOCKS:
+                    SDL_RenderCopy(renderer, socks_texture, NULL, &rect);
+                    break;
+                case PLANCHER:
+                    SDL_RenderCopy(renderer, tileset_texture, &texture_info[9].clip, &rect);
+                    break;
+                case PONTON:
+                    SDL_RenderCopy(renderer, tileset_texture, &texture_info[10].clip, &rect);
+                    break;
+                case INVISIBLE:
+                case EMPTY:
+                default:
+                    break;
             }
         }
     }

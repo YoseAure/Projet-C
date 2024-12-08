@@ -5,14 +5,8 @@
 #include "../include/maps.h"
 
 extern bool exit_program;
+extern bool quit_game;
 bool play_intro = true;
-
-// Structure pour stocker les informations des options de menu
-typedef struct {
-    const char *text;
-    SDL_Color color;
-    SDL_Rect rect;
-} MenuOption;
 
 
 void play_intro_animation(SDL_Renderer *renderer,
@@ -35,7 +29,7 @@ void play_intro_animation(SDL_Renderer *renderer,
     int van_speed_x = 9;
     int van_wave_amplitude = 4;
 
-    int text_x = window_width; // Le texte démarre de la droite de l'écran
+    int text_x = window_width;
     int title_y = window_height / 4;
 
     int background_x = - window_width / 2;
@@ -52,7 +46,6 @@ void play_intro_animation(SDL_Renderer *renderer,
     SDL_Event event;
     bool skip_animation = false;
 
-    // Calcul de la position de départ du groupe d'options
     int options_spacing = 20;
     SDL_Surface *title_surface = TTF_RenderText_Solid(title_font, title, (SDL_Color){0, 0, 0, 255});
     int title_height = title_surface->h;
@@ -76,26 +69,21 @@ void play_intro_animation(SDL_Renderer *renderer,
         *final_van_x = van_x;
         *final_van_y = van_y;
 
-        // Déplacement du texte et de l'image de fond vers la gauche
         text_x -= background_speed_x;
         background_x -= background_speed_x;
 
-        // Réinitialiser la position de l'image de fond pour créer un effet de boucle
         if (background_x <= -window_width) {
             background_x = 0;
         }
 
-        // Affichage de l'image de fond en défilement
         SDL_Rect background_dest1 = {background_x, 0, window_width, window_height};
         SDL_Rect background_dest2 = {background_x + window_width, 0, window_width, window_height};
         SDL_RenderCopy(renderer, background_texture, NULL, &background_dest1);
         SDL_RenderCopy(renderer, background_texture, NULL, &background_dest2);
 
-        // Affichage du van
         SDL_Rect van_dest = {van_x, van_y, van_width, van_height};
         SDL_RenderCopy(renderer, van_texture, NULL, &van_dest);
 
-        // Affichage du titre
         SDL_Color noir = {0, 0, 0, 255};
         SDL_Surface *title_surface = TTF_RenderText_Solid(title_font, title, noir);
         SDL_Texture *title_texture = SDL_CreateTextureFromSurface(renderer, title_surface);
@@ -106,7 +94,6 @@ void play_intro_animation(SDL_Renderer *renderer,
         SDL_FreeSurface(title_surface);
         SDL_DestroyTexture(title_texture);
 
-        // Affichage des options de menu centrées et alignées avec le titre
         for (int i = 0; i < options_count; ++i) {
             SDL_Color color = {0, 0, 0, 255}; // Noir
             SDL_Surface *surface = TTF_RenderText_Solid(font, options[i], color);
@@ -136,7 +123,6 @@ void play_intro_animation(SDL_Renderer *renderer,
     }
 }
 
-// Fonction principale du menu
 void display_main_menu(SDL_Renderer *renderer) {
     TTF_Font *font = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 32);
     TTF_Font *font_large = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 36);
@@ -216,7 +202,7 @@ void display_main_menu(SDL_Renderer *renderer) {
                     case SDLK_RETURN:
                         if (selected == 0) {
                             start_game(renderer);
-                            quit = true;
+                            // quit = true;
                         } else if (selected == 1) {
                             settings(renderer);
                         } else if (selected == 2) {
@@ -239,7 +225,7 @@ void display_main_menu(SDL_Renderer *renderer) {
         SDL_RenderCopy(renderer, background_texture, NULL, NULL);
         SDL_DestroyTexture(background_texture);
 
-        // Affichage du titre qui clignote
+        // titre qui clignote
         Uint32 current_time = SDL_GetTicks();
         bool is_orange = ((current_time - start_time) / blink_interval) % 2 == 0;
         SDL_Color title_color = is_orange ? (SDL_Color){0, 0, 0, 255} : (SDL_Color){0, 0, 0, 255}; // Noir

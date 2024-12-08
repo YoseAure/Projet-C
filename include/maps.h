@@ -9,11 +9,12 @@
 #include "constants.h"
 #include "structs.h"
 #include "sprite.h"
+#include "game.h"
 
 Map* load_map();
 // Map* load_map_from_csv(const char *filename);
 void free_map(Map *map);
-void render_map(SDL_Renderer *renderer, Map *map, int cameraX, int cameraY, bool grass_layer);
+void render_map(SDL_Renderer *renderer, Map *map, int cameraX, int cameraY);
 void reset_map(Map **map);
 bool load_block_textures(SDL_Renderer *renderer);
 void free_block_textures();

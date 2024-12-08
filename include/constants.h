@@ -2,8 +2,8 @@
 #define CONSTANTS_H
 
 // general
-#define WINDOW_WIDTH  1300 // 1280
-#define WINDOW_HEIGHT 900 // 720
+#define WINDOW_WIDTH  1850 // 1280
+#define WINDOW_HEIGHT 1000 // 720
 
 #define TILE_SIZE 30
 

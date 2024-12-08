@@ -66,7 +66,7 @@ void settings(SDL_Renderer *renderer) {
                                 Mix_HaltMusic();
                             } else {
                                 // Pour rejouer la musique si elle est reactivée
-                                Mix_PlayMusic(Mix_LoadMUS("assets/audio/background-music-1.mp3"), -1);
+                                Mix_PlayMusic(Mix_LoadMUS("assets/audio/background-music-2.mp3"), -1);
                             }
                         } else if (selected == 1) {
                             sound_effects_enabled = !sound_effects_enabled;
