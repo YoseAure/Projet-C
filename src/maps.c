@@ -470,7 +470,11 @@ Map* load_map() {
                     break;
                 case 'S':
                     map->blocks[row][col].type = SAPIN;
-                    map->blocks[row][col].isSolid = true;
+                    if (pokemon_gameType && !mario_gameType) {
+                        map->blocks[row][col].isSolid = true;
+                    } else {
+                        map->blocks[row][col].isSolid = false;
+                    }
                     map->blocks[row][col].height = TILE_SIZE * 4;
                     map->blocks[row][col].width = TILE_SIZE * 2;
                     map->blocks[row][col].y -= TILE_SIZE * 3;
@@ -543,6 +547,14 @@ Map* load_map() {
                     map->blocks[row][col].type = PONTON;
                     map->blocks[row][col].isSolid = false;
                     break;
+                case 'd':
+                    map->blocks[row][col].type = DEATH;
+                    map->blocks[row][col].isSolid = false;
+                    break;
+                case 'W':
+                    map->blocks[row][col].type = WIN;
+                    map->blocks[row][col].isSolid = false;
+                    break;
                 default:
                     map->blocks[row][col].type = EMPTY;
                     map->blocks[row][col].isSolid = false;
@@ -595,7 +607,7 @@ void render_map(SDL_Renderer *renderer, Map *map, int cameraX, int cameraY) {
         }
    }
 
-   if (pokemon_gameType && current_map == 1) {
+   if (pokemon_gameType && current_map > 0 && current_map < 5) {
        SDL_SetRenderDrawColor(renderer, 156, 219, 67, 255);
        SDL_RenderClear(renderer);
     } else if (pokemon_gameType && current_map == 2) {

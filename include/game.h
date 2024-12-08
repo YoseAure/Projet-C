@@ -13,6 +13,7 @@
 #include "sprite.h"
 #include "settings.h"
 #include "maps.h"
+#include "tools.h"
 
 void render_inventory(SDL_Renderer *renderer, Inventory *inventory);
 void start_game(SDL_Renderer *renderer);

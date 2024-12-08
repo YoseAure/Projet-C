@@ -39,7 +39,9 @@ typedef enum {
     NEXT_MAP,
     NEXT_LEVEL,
     PREVIOUS_MAP,
-    PREVIOUS_LEVEL
+    PREVIOUS_LEVEL,
+    DEATH,
+    WIN
 } BlockType;
 
 typedef enum {

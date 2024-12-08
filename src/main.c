@@ -8,6 +8,7 @@
 #include "../include/cleanup.h"
 
 bool exit_program = false;
+extern bool quit_game;
 
 typedef enum {
     MAIN_MENU,
@@ -40,8 +41,10 @@ int main(int argc, char *argv[]) {
                 start_game(renderer);
                 if (exit_program) {
                     game_state = EXIT;
-                } else {
+                } else if (quit_game) { // Ajoutez cette condition pour revenir au menu principal
                     game_state = MAIN_MENU;
+                } else {
+                    game_state = IN_GAME;
                 }
                 break;
             default:

@@ -221,32 +221,13 @@ void update_player(SDL_Renderer *renderer, Map *map, int width, int height, Uint
                     if (currentTime - player.lastHit_t >= 1000) {
                         player.lastHit_t = currentTime;
                         player.life_points--;
+                        play_life_loss_sound();
+                        // play_sound("assets/audio/hp-loss.mp3");
                     }
                 } else if (map->blocks[i][j].type == COIN && checkCollision(&player, &obs)) {
                     player.coins_count++;
                     map->blocks[i][j].type = EMPTY;
-                } else if (map->blocks[i][j].type == SOCKS && checkCollision(&player, &obs)) {
-                    if (player_inventory.item_count < MAX_ITEMS) {
-                        SDL_Texture *socks_texture = load_texture("assets/images/socks.png", renderer);
-                        if (socks_texture) {
-                            Item socks = { "Socks", socks_texture };
-                            player_inventory.items[player_inventory.item_count] = socks;
-                            player_inventory.item_count++;
-                            map->blocks[i][j].type = EMPTY;
-                        }
-                    }
-                }
-            }
-        }
-
-        for (int i = 0; i < mob_count; i++) {
-            if (mobs[i].type != PRINCESS) {
-                SDL_Rect mob_rect = { mobs[i].x, mobs[i].y, mobs[i].width, mobs[i].height };
-                if (checkCollision(&player, &mob_rect)) {
-                    if (currentTime - player.lastHit_t >= 1000) {
-                        player.lastHit_t = currentTime;
-                        player.life_points--;
-                    }
+                    play_pop_sound();
                 }
             }
         }
@@ -259,6 +240,20 @@ void update_player(SDL_Renderer *renderer, Map *map, int width, int height, Uint
         }
     }
 
+    for (int i = 0; i < mob_count; i++) {
+        if (mobs[i].type != PRINCESS) {
+            SDL_Rect mob_rect = {mobs[i].x, mobs[i].y, mobs[i].width, mobs[i].height};
+            if (checkCollision(&player, &mob_rect)) {
+                if (currentTime - player.lastHit_t >= 1000) {
+                    player.lastHit_t = currentTime;
+                    player.life_points--;
+                    play_life_loss_sound();
+                    // play_sound("assets/audio/hp-loss.mp3");
+                }
+            }
+        }
+    }
+
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
             SDL_Rect obs = { map->blocks[i][j].x, map->blocks[i][j].y, map->blocks[i][j].width, map->blocks[i][j].height };
@@ -267,14 +262,13 @@ void update_player(SDL_Renderer *renderer, Map *map, int width, int height, Uint
                     case NEXT_MAP:
                         current_map++;
                         new_map = true;
-                        if (current_map > 0) {
+                        if (current_map > 0 && current_map < 5) {
                             pokemon_gameType = true;
                             mario_gameType = false;
                         } else {
                             pokemon_gameType = false;
                             mario_gameType = true;
                         }
-                        // quit_game = true;
                         break;
                     case NEXT_LEVEL:
                         current_level++;
@@ -287,7 +281,6 @@ void update_player(SDL_Renderer *renderer, Map *map, int width, int height, Uint
                             pokemon_gameType = false;
                             mario_gameType = true;
                         }
-                        // quit_game = true;
                         break;
                     case PREVIOUS_MAP:
                         current_map--;
@@ -299,7 +292,6 @@ void update_player(SDL_Renderer *renderer, Map *map, int width, int height, Uint
                             pokemon_gameType = false;
                             mario_gameType = true;
                         }
-                        // quit_game = true;
                         break;
                     case PREVIOUS_LEVEL:
                         current_level--;
@@ -312,7 +304,29 @@ void update_player(SDL_Renderer *renderer, Map *map, int width, int height, Uint
                             pokemon_gameType = false;
                             mario_gameType = true;
                         }
-                        // quit_game = true;
+                        break;
+                    case SOCKS:
+                        if (player_inventory.item_count < MAX_ITEMS) {
+                            current_map++;
+                            new_map = true;
+                            if (current_map > 0 && current_map < 5) {
+                                pokemon_gameType = true;
+                                mario_gameType = false;
+                            } else {
+                                pokemon_gameType = false;
+                                mario_gameType = true;
+                            }
+                            SDL_Texture *socks_texture = load_texture("assets/images/socks.png", renderer);
+                            if (socks_texture) {
+                                Item socks = { "Socks", socks_texture };
+                                player_inventory.items[player_inventory.item_count] = socks;
+                                player_inventory.item_count++;
+                                map->blocks[i][j].type = EMPTY;
+                            }
+                        }
+                        break;
+                    case DEATH:
+                        player.life_points = 0;
                         break;
                     default:
                         break;
@@ -570,6 +584,7 @@ void display_in_game_menu(SDL_Renderer *renderer, Player *player, bool *return_t
                             }
                         } else if (selected == 1) {
                             *return_to_main_menu = true;
+                            quit_game = true;
                             quit = true;
                         } else if (selected == 2) {
                             if (player->life_points > 0) {
@@ -695,7 +710,28 @@ void dim(SDL_Renderer *renderer) {
     blacken(renderer, 10);
 }
 
+void reset_game() {
+    reset_game_state();
+    reset_keys();
+    player.life_points = 3;
+    player.coins_count = 0;
+    player_inventory.item_count = 0;
+    quit_game = false;
+    show_inventory = false;
+    new_map = false;
+    current_level = 1;
+    current_map = 0;
+    mario_gameType = true;
+    pokemon_gameType = false;
+}
+
 void start_game(SDL_Renderer *renderer) {
+    play_horn_sound();
+    reset_game(); // Ajoutez cet appel pour réinitialiser l'état du jeu
+    // const char *klaxon = "assets/audio/klaxon.mp3";
+    // play_sound(klaxon);
+    current_level = 1;
+    current_map = 0;
     bool return_to_main_menu = false;
     bool in_game_menu = false;
     bool resume_game = false;
@@ -792,6 +828,8 @@ void start_game(SDL_Renderer *renderer) {
                     render_inventory(renderer, &player_inventory);
                 }
             } else {
+                play_loss_sound();
+                // play_sound("assets/audio/game-over.mp3");
                 display_in_game_menu(renderer, &player, &return_to_main_menu, &resume_game);
             }
         } else {
