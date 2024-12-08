@@ -5,6 +5,13 @@
 #include "constants.h"
 
 typedef struct {
+    const char *text;
+    SDL_Color color;
+    SDL_Rect rect;
+} MenuOption;
+
+
+typedef struct {
     int x, y, width, height;
     BlockType type;
     bool isSolid;

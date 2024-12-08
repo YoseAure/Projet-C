@@ -8,6 +8,12 @@ extern SDL_Rect dragon_clips[MAX_SPRITE_ROWS][MAX_SPRITE_COLS];
 extern Mob mobs[MAX_MOBS];
 extern int mob_count;
 
+extern int current_level;
+extern int current_map;
+
+extern bool pokemon_gameType;
+extern bool mario_gameType;
+
 SDL_Texture *ground_texture = NULL;
 SDL_Texture *brick_texture = NULL;
 SDL_Texture *pilar_texture = NULL;
@@ -35,7 +41,9 @@ TextureInfo texture_info[] = {
     {{383, 64, 35, 35}, 32, 32},    // 5 WATER
     {{34, 225, 29, 27}, 32, 32},    // 6 GRASS
     {{229, 129, 23, 30}, 32, 32},   // 7 GROUND 2
-    {{101, 129, 23, 27}, 32, 32}    // 8 EARTH
+    {{101, 129, 23, 27}, 32, 32},   // 8 EARTH
+    {{11, 293, 37, 43}, 32, 32},    // 9 PLANCHER
+    {{136, 314, 57, 35}, 32, 32}    // 10 PONTON
 };
 int texture_count = sizeof(texture_info) / sizeof(TextureInfo);
 
@@ -299,7 +307,10 @@ void init_map(Map *map) {
 //     return map;
 // }
 
-Map* load_map(const char *filename) {
+
+Map* load_map() {
+    char filename[50];
+    sprintf(filename, "assets/maps/map-%d.%d.txt", current_level, current_map);
     FILE *file = fopen(filename, "r");
     if (!file) {
         printf("Erreur lors de l'ouverture du fichier de carte: %s\n", filename);
@@ -373,11 +384,11 @@ Map* load_map(const char *filename) {
                     getSpriteClips(player.clips, PLAYER_SPRITE_ROWS, PLAYER_SPRITE_COLS, PLAYER_SPRITE_FRAME_WIDTH, PLAYER_SPRITE_FRAME_HEIGHT);
                     break;
                 case 'G':
-                    map->blocks[row][col].type = WATER;
+                    map->blocks[row][col].type = GROUND;
                     map->blocks[row][col].isSolid = true;
                     break;
                 case 'B':
-                    map->blocks[row][col].type = WATER;
+                    map->blocks[row][col].type = BRICK;
                     map->blocks[row][col].isSolid = true;
                     break;
                 case 'V':
@@ -416,10 +427,6 @@ Map* load_map(const char *filename) {
                         mobs[mob_count].initial_y = row * TILE_SIZE;
                         mob_count++;
                     }
-                    break;
-                case 'N':
-                    map->blocks[row][col].type = BLACK;
-                    map->blocks[row][col].isSolid = false;
                     break;
                 case 'D':
                     map->blocks[row][col].type = BLOCK_DRAGON;
@@ -474,6 +481,10 @@ Map* load_map(const char *filename) {
                     map->blocks[row][col].height = TILE_SIZE * 6;
                     map->blocks[row][col].width = TILE_SIZE * 6;
                     break;
+                case 'h':
+                    map->blocks[row][col].type = HOUSE;
+                    map->blocks[row][col].isSolid = true;
+                    break;
                 case 'c':
                     map->blocks[row][col].type = CHEST;
                     map->blocks[row][col].isSolid = true;
@@ -489,16 +500,47 @@ Map* load_map(const char *filename) {
                 case 'g':
                     map->blocks[row][col].type = GRASS;
                     map->blocks[row][col].isSolid = false;
+                    break;
                 case 'Y':
                     map->blocks[row][col].type = WATER;
                     map->blocks[row][col].isSolid = false;
+                    break;
                 case 'w':
                     map->blocks[row][col].type = WATER;
                     map->blocks[row][col].isSolid = true;
+                    break;
                 case 'Q':
                     map->blocks[row][col].width = TILE_SIZE * 1.5;
                     map->blocks[row][col].height = TILE_SIZE * 1.5;
                     map->blocks[row][col].type = SOCKS;
+                    map->blocks[row][col].isSolid = false;
+                    break;
+                case 'K':
+                    map->blocks[row][col].type = PLANCHER;
+                    map->blocks[row][col].isSolid = false;
+                    break;
+                case 'O':
+                    map->blocks[row][col].type = BLACK;
+                    map->blocks[row][col].isSolid = true;
+                    break;
+                case 'N':
+                    map->blocks[row][col].type = NEXT_LEVEL;
+                    map->blocks[row][col].isSolid = false;
+                    break;
+                case 'n':
+                    map->blocks[row][col].type = NEXT_MAP;
+                    map->blocks[row][col].isSolid = false;
+                    break;
+                case 'X':
+                    map->blocks[row][col].type = PREVIOUS_LEVEL;
+                    map->blocks[row][col].isSolid = false;
+                    break;
+                case 'x':
+                    map->blocks[row][col].type = PREVIOUS_MAP;
+                    map->blocks[row][col].isSolid = false;
+                    break;
+                case 'y':
+                    map->blocks[row][col].type = PONTON;
                     map->blocks[row][col].isSolid = false;
                     break;
                 default:
@@ -535,20 +577,30 @@ void render_map(SDL_Renderer *renderer, Map *map, int cameraX, int cameraY) {
     idée : charger différentes musiques selon la map en utilisant la même logique avec i et j ?
     */
    
-    int window_width, window_height;
-    SDL_GetRendererOutputSize(renderer, &window_width, &window_height);
+   if (mario_gameType) {
+        int window_width, window_height;
+        SDL_GetRendererOutputSize(renderer, &window_width, &window_height);
 
-    int background_width = window_width;
-    int background_height = window_height;
-    int background_x = -cameraX % background_width;
-    int background_y = +cameraY % background_height;
+        int background_width = window_width;
+        int background_height = window_height;
+        int background_x = -cameraX % background_width;
+        int background_y = +cameraY % background_height;
 
-    SDL_Rect backgroundRect = {background_x, background_y - cameraY, background_width, background_height};
-    SDL_RenderCopy(renderer, background_texture, NULL, &backgroundRect);
+        SDL_Rect backgroundRect = {background_x, background_y - cameraY, background_width, background_height};
+        SDL_RenderCopy(renderer, background_texture, NULL, &backgroundRect);
 
-    if (background_x + background_width < window_width) {
-        SDL_Rect backgroundRect2 = {background_x + background_width, background_y - cameraY, background_width, background_height};
-        SDL_RenderCopy(renderer, background_texture, NULL, &backgroundRect2);
+        if (background_x + background_width < window_width) {
+            SDL_Rect backgroundRect2 = {background_x + background_width, background_y - cameraY, background_width, background_height};
+            SDL_RenderCopy(renderer, background_texture, NULL, &backgroundRect2);
+        }
+   }
+
+   if (pokemon_gameType && current_map == 1) {
+       SDL_SetRenderDrawColor(renderer, 156, 219, 67, 255);
+       SDL_RenderClear(renderer);
+    } else if (pokemon_gameType && current_map == 2) {
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
     }
 
     for (int i = 0; i < map->height; ++i) {
@@ -569,6 +621,7 @@ void render_map(SDL_Renderer *renderer, Map *map, int cameraX, int cameraY) {
                     break;
                 case TORCH:
                     SDL_RenderCopy(renderer, torch_texture, NULL, &rect);
+                    break;
                 case SAPIN:
                     rect.w = TILE_SIZE * 2;
                     rect.h = TILE_SIZE * 4;
@@ -606,6 +659,12 @@ void render_map(SDL_Renderer *renderer, Map *map, int cameraX, int cameraY) {
                     break;
                 case SOCKS:
                     SDL_RenderCopy(renderer, socks_texture, NULL, &rect);
+                    break;
+                case PLANCHER:
+                    SDL_RenderCopy(renderer, tileset_texture, &texture_info[9].clip, &rect);
+                    break;
+                case PONTON:
+                    SDL_RenderCopy(renderer, tileset_texture, &texture_info[10].clip, &rect);
                     break;
                 case INVISIBLE:
                 case EMPTY:
