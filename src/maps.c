@@ -13,6 +13,7 @@ extern int current_map;
 
 extern bool pokemon_gameType;
 extern bool mario_gameType;
+extern bool new_map;
 
 SDL_Texture *ground_texture = NULL;
 SDL_Texture *brick_texture = NULL;
@@ -30,6 +31,9 @@ SDL_Rect *tile_clips = NULL;
 SDL_Texture *ground_tileset_texture = NULL;
 SDL_Rect *ground_tile_clips = NULL;
 SDL_Texture *socks_texture = NULL;
+SDL_Texture *store_texture = NULL;
+SDL_Texture *surfshop_texture = NULL;
+SDL_Texture *planche_surfshop_texture = NULL;
 
 TextureInfo texture_info[] = {
     // {{x, y, w (pixel), h (pixel)}, w (largeur de la texture), h (hauteur de la texture)}
@@ -111,6 +115,11 @@ bool load_block_textures(SDL_Renderer *renderer) {
         printf("Error loading background texture: %s\n", SDL_GetError());
     }
 
+    surfshop_texture = IMG_LoadTexture(renderer, "../assets/images/surfshop_background.png");
+    if (surfshop_texture == NULL) {
+        printf("Error loading surshop_background texture: %s\n", SDL_GetError());
+    }
+
     coin_texture = IMG_LoadTexture(renderer, "../assets/images/sexwax.png");
     if (!coin_texture) {
         printf("Error loading coin texture: %s\n", SDL_GetError());
@@ -155,6 +164,18 @@ bool load_block_textures(SDL_Renderer *renderer) {
         return false;
     }
 
+    store_texture = IMG_LoadTexture(renderer, "../assets/images/surfeur_surfshop.png");
+    if (!store_texture) {
+        printf("Error loading store texture: %s\n", SDL_GetError());
+        return false;
+    }
+
+    planche_surfshop_texture = IMG_LoadTexture(renderer, "../assets/images/planche_surfshop.png");
+    if (!planche_surfshop_texture) {
+        printf("Error loading planche_surfshop texture: %s\n", SDL_GetError());
+        return false;
+    }
+
     return true;
 }
 
@@ -195,6 +216,10 @@ void free_block_textures() {
         SDL_DestroyTexture(background_texture);
         background_texture = NULL;
     }
+    if (surfshop_texture) {
+        SDL_DestroyTexture(surfshop_texture);
+        surfshop_texture = NULL;
+    }
     if (dragon_texture) {
         SDL_DestroyTexture(dragon_texture);
         dragon_texture = NULL;
@@ -222,6 +247,14 @@ void free_block_textures() {
     if (socks_texture) {
         SDL_DestroyTexture(socks_texture);
         socks_texture = NULL;
+    }
+    if (store_texture) {
+        SDL_DestroyTexture(store_texture);
+        store_texture = NULL;
+    }
+    if (planche_surfshop_texture) {
+        SDL_DestroyTexture(planche_surfshop_texture);
+        planche_surfshop_texture = NULL;
     }
 }
 
@@ -378,7 +411,9 @@ Map* load_map() {
                     player.lastHit_t = 0;
                     player.life_points = 3;
                     player.total_life_points = 3;
-                    player.coins_count = 0;
+                    if (!new_map) {
+                        player.coins_count = 0;
+                    }
                     player.animation_row = IDLE;
                     player.texture = player_texture;
                     getSpriteClips(player.clips, PLAYER_SPRITE_ROWS, PLAYER_SPRITE_COLS, PLAYER_SPRITE_FRAME_WIDTH, PLAYER_SPRITE_FRAME_HEIGHT);
@@ -543,6 +578,18 @@ Map* load_map() {
                     map->blocks[row][col].type = PONTON;
                     map->blocks[row][col].isSolid = false;
                     break;
+                case 'M':
+                    map->blocks[row][col].width = TILE_SIZE * 1.5;
+                    map->blocks[row][col].height = TILE_SIZE * 2;
+                    map->blocks[row][col].type = STORE;
+                    map->blocks[row][col].isSolid = false;
+                    break;
+                case 't':
+                    map->blocks[row][col].width = TILE_SIZE * 1.5;
+                    map->blocks[row][col].height = TILE_SIZE * 2.5;
+                    map->blocks[row][col].type = PLANCHESURFSHOP;
+                    map->blocks[row][col].isSolid = false;
+                    break;
                 default:
                     map->blocks[row][col].type = EMPTY;
                     map->blocks[row][col].isSolid = false;
@@ -599,8 +646,9 @@ void render_map(SDL_Renderer *renderer, Map *map, int cameraX, int cameraY) {
        SDL_SetRenderDrawColor(renderer, 156, 219, 67, 255);
        SDL_RenderClear(renderer);
     } else if (pokemon_gameType && current_map == 2) {
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, surfshop_texture, NULL, NULL);
+        // SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        // SDL_RenderClear(renderer);
     }
 
     for (int i = 0; i < map->height; ++i) {
@@ -665,6 +713,12 @@ void render_map(SDL_Renderer *renderer, Map *map, int cameraX, int cameraY) {
                     break;
                 case PONTON:
                     SDL_RenderCopy(renderer, tileset_texture, &texture_info[10].clip, &rect);
+                    break;
+                case STORE:
+                    SDL_RenderCopy(renderer, store_texture, NULL, &rect);
+                    break;
+                case PLANCHESURFSHOP:
+                    SDL_RenderCopy(renderer, planche_surfshop_texture, NULL, &rect);
                     break;
                 case INVISIBLE:
                 case EMPTY:

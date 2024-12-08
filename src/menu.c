@@ -7,7 +7,7 @@
 extern bool exit_program;
 extern bool quit_game;
 bool play_intro = true;
-
+extern Inventory player_inventory;
 
 void play_intro_animation(SDL_Renderer *renderer,
                           SDL_Texture *van_texture,
@@ -201,6 +201,7 @@ void display_main_menu(SDL_Renderer *renderer) {
                         } break;
                     case SDLK_RETURN:
                         if (selected == 0) {
+                            player_inventory.item_count = 0;
                             start_game(renderer);
                             // quit = true;
                         } else if (selected == 1) {

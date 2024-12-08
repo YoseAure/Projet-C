@@ -1,4 +1,5 @@
 #include "../include/game.h"
+#include "../include/speech.h"
 
 extern bool exit_program;
 extern SDL_Texture *coin_texture;
@@ -20,6 +21,11 @@ const Uint32 FRAME_DELAY = 100;
 
 bool mario_gameType = true;
 bool pokemon_gameType = false;
+
+bool start_speech = false;
+int speech_index = 0; // Ajoutez cette variable pour suivre l'index du dialogue
+bool surfboard = false;
+
 
 Player player;
 
@@ -83,6 +89,41 @@ SDL_Texture* load_texture(const char *file, SDL_Renderer *renderer) {
     SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
     return texture;
+}
+
+void render_speech_bubble(SDL_Renderer *renderer, const char *message) {
+    TTF_Font *font = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 24);
+    if (!font) {
+        printf("Erreur TTF_OpenFont: %s\n", TTF_GetError());
+        return;
+    }
+
+    SDL_Color black = {0, 0, 0, 255};
+    SDL_Surface *surface = TTF_RenderText_Solid(font, message, black);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+    int text_width = surface->w;
+    int text_height = surface->h;
+    SDL_Rect dest = { (WINDOW_WIDTH - text_width) / 2, (WINDOW_HEIGHT - text_height) / 2, text_width, text_height };
+
+    SDL_Texture *bubble_texture = load_texture("assets/images/speech_bubble.png", renderer);
+    if (!bubble_texture) {
+        printf("Erreur lors du chargement de l'image de la bulle de dialogue\n");
+        SDL_FreeSurface(surface);
+        SDL_DestroyTexture(texture);
+        TTF_CloseFont(font);
+        return;
+    }
+
+    SDL_Rect background_rect = { dest.x - 25, dest.y - 10, text_width + 80, text_height + 70 }; // Augmentez la largeur de l'image
+    SDL_RenderCopy(renderer, bubble_texture, NULL, &background_rect);
+
+    SDL_RenderCopy(renderer, texture, NULL, &dest);
+
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
+    SDL_DestroyTexture(bubble_texture);
+    TTF_CloseFont(font);
 }
 
 void update_player(SDL_Renderer *renderer, Map *map, int width, int height, Uint32 currentTime) {
@@ -184,7 +225,7 @@ void update_player(SDL_Renderer *renderer, Map *map, int width, int height, Uint
         }
     }
 
-    if (mario_gameType) {
+    if (mario_gameType && !pokemon_gameType) {
         if (keys[SDL_SCANCODE_SPACE] && !player.isJumping) {
             if (currentTime - player.lastJump_t >= JUMP_DELAY) {
                 player.y_speed = JUMP_FORCE;
@@ -313,6 +354,10 @@ void update_player(SDL_Renderer *renderer, Map *map, int width, int height, Uint
                             mario_gameType = true;
                         }
                         // quit_game = true;
+                        break;
+                    case STORE:
+                        speech_index = 0;
+                        start_speech = true;
                         break;
                     default:
                         break;
@@ -735,6 +780,24 @@ void start_game(SDL_Renderer *renderer) {
                 handle_input(&event);
                 if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
                     in_game_menu = !in_game_menu;
+                }                
+                if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_RETURN && start_speech) {
+                    if (speech_index == 2) {
+                        if (player.coins_count >= 8) {
+                            speech_index = 4;
+                            player.coins_count -= 4;
+                            surfboard = true;
+                        } else if (player.coins_count < 8) {
+                            speech_index++;
+                        }
+                    } else if (speech_index == 3) {
+                        start_speech = false;
+                    } else {
+                        speech_index++;
+                        if (speech_index >= sizeof(dialogue) / sizeof(dialogue[0])) {
+                            start_speech = false;
+                        }
+                    }
                 }
             }
         }
@@ -744,9 +807,9 @@ void start_game(SDL_Renderer *renderer) {
                 blackout(renderer);
                 reset_game_state();
                 reset_keys();
-                new_map = false;
                 free_map(map);
                 map = load_map();
+                new_map = false;
                 if (!map) {
                     printf("Erreur lors du chargement de la carte\n");
                     return;
@@ -791,7 +854,20 @@ void start_game(SDL_Renderer *renderer) {
                 if (show_inventory) {
                     render_inventory(renderer, &player_inventory);
                 }
+                if (start_speech) {
+                    render_speech_bubble(renderer, dialogue[speech_index]);
+                }
+                if (surfboard && player_inventory.item_count < MAX_ITEMS) {
+                    SDL_Texture *surf_texture = load_texture("assets/images/surf.png", renderer);
+                    if (surf_texture) {
+                        Item surf = { "Surfboard", surf_texture };
+                        player_inventory.items[player_inventory.item_count] = surf;
+                        player_inventory.item_count++;
+                        surfboard = false; // Reset surfboard to avoid adding multiple times
+                    }
+                }
             } else {
+                player_inventory.item_count = 0;
                 display_in_game_menu(renderer, &player, &return_to_main_menu, &resume_game);
             }
         } else {

@@ -2,14 +2,14 @@
 #define CONSTANTS_H
 
 // general
-#define WINDOW_WIDTH  1850 // 1280
-#define WINDOW_HEIGHT 1000 // 720
+#define WINDOW_WIDTH  1280 // 1280
+#define WINDOW_HEIGHT 720 // 720
 
 #define TILE_SIZE 30
 
 // Maps
 #define WORLD_WIDTH 13500
-#define WORLD_HEIGHT 1500
+#define WORLD_HEIGHT 2040
 
 typedef enum {
     INVISIBLE,
@@ -39,7 +39,9 @@ typedef enum {
     NEXT_MAP,
     NEXT_LEVEL,
     PREVIOUS_MAP,
-    PREVIOUS_LEVEL
+    PREVIOUS_LEVEL,
+    STORE,
+    PLANCHESURFSHOP
 } BlockType;
 
 typedef enum {
