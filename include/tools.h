@@ -12,5 +12,6 @@ void play_horn_sound();
 void play_loss_sound();
 void play_life_loss_sound();
 void play_pop_sound();
+void play_win_sound();
 
 #endif // TOOLS_H

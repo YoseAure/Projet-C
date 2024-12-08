@@ -36,6 +36,8 @@ typedef enum {
     SOCKS,
     PLANCHER,
     PONTON,
+    STORE,
+    PLANCHESURFSHOP,
     NEXT_MAP,
     NEXT_LEVEL,
     PREVIOUS_MAP,

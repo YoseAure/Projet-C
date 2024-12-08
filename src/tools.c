@@ -26,6 +26,7 @@ void render_text(SDL_Renderer *renderer, const char *text, TTF_Font *font, SDL_C
 //     Mix_FreeChunk(sound);
 // }
 
+// pas propre ...
 void play_life_loss_sound() {
     Mix_Chunk *life_loss = Mix_LoadWAV("assets/audio/hp-loss.mp3");
     if (life_loss == NULL) {
@@ -60,4 +61,13 @@ void play_pop_sound() {
         return;
     }
     Mix_PlayChannel(-1, pop, 0);
+}
+
+void play_win_sound() {
+    Mix_Chunk *win = Mix_LoadWAV("assets/audio/win.mp3");
+    if (win == NULL) {
+        printf("Failed to load win sound: %s\n", Mix_GetError());
+        return;
+    }
+    Mix_PlayChannel(-1, win, 0);
 }
