@@ -1,6 +1,6 @@
 #include "../include/maps.h"
-#include <stdio.h>
-#include <stdlib.h>
+#include "textures.h"
+
 
 extern Player player;
 
@@ -16,43 +16,6 @@ extern bool new_map;
 extern bool surfsheet;
 extern SDL_Texture *surfer;
 
-SDL_Texture *ground_texture = NULL;
-SDL_Texture *brick_texture = NULL;
-SDL_Texture *pilar_texture = NULL;
-SDL_Texture *torch_texture = NULL;
-SDL_Texture *coin_texture = NULL;
-SDL_Texture *enemy_texture = NULL;
-SDL_Texture *player_texture = NULL;
-SDL_Texture *background_texture = NULL;
-SDL_Texture *dragon_texture = NULL;
-SDL_Texture *princess_texture = NULL;
-SDL_Texture *redFlag_texture = NULL;
-SDL_Texture *tileset_texture = NULL;
-SDL_Rect *tile_clips = NULL;
-SDL_Texture *ground_tileset_texture = NULL;
-SDL_Rect *ground_tile_clips = NULL;
-SDL_Texture *socks_texture = NULL;
-SDL_Texture *store_texture = NULL;
-SDL_Texture *surfshop_texture = NULL;
-SDL_Texture *planche_surfshop_texture = NULL;
-SDL_Texture *win_background = NULL;
-SDL_Texture *pesty_texture = NULL;
-
-TextureInfo texture_info[] = {
-    // {{x, y, w (pixel), h (pixel)}, w (largeur de la texture), h (hauteur de la texture)}
-    {{7, 4, 51, 91}, 32, 32},       // 0 GROUND
-    {{244, 10, 138, 192}, 32, 32},  // 1 HOUSE
-    {{9, 240, 36, 31}, 32, 32},     // 2 CHEST
-    {{4, 199, 30, 25}, 32, 32},     // 3 ROCK in water
-    {{175, 185, 29, 31}},           // 4 PANEL
-    {{383, 64, 35, 35}, 32, 32},    // 5 WATER
-    {{34, 225, 29, 27}, 32, 32},    // 6 GRASS
-    {{229, 129, 23, 30}, 32, 32},   // 7 GROUND 2
-    {{101, 129, 23, 27}, 32, 32},   // 8 EARTH
-    {{11, 293, 37, 43}, 32, 32},    // 9 PLANCHER
-    {{136, 314, 57, 35}, 32, 32}    // 10 PONTON
-};
-int texture_count = sizeof(texture_info) / sizeof(TextureInfo);
 
 bool load_tileset(SDL_Renderer *renderer, const char *path, SDL_Texture **tileset, SDL_Rect **clips, int tile_width, int tile_height) {
     SDL_Surface *tileset_surface = IMG_Load(path);
@@ -289,79 +252,6 @@ void init_map(Map *map) {
         }
     }
 }
-
-// Map *load_map_from_csv(const char *filename)
-// {
-//     FILE *file = fopen(filename, "r");
-//     if (!file)
-//     {
-//         printf("Erreur lors de l'ouverture du fichier pour la lecture: %s\n", filename);
-//         return NULL;
-//     }
-
-//     Map *map = malloc(sizeof(Map));
-//     if (!map)
-//     {
-//         fclose(file);
-//         return NULL;
-//     }
-
-//     map->width = 0;
-//     map->height = 0;
-
-//     char line[1024];
-//     while (fgets(line, sizeof(line), file))
-//     {
-//         if (map->width == 0)
-//         {
-//             char *token = strtok(line, ";");
-//             while (token)
-//             {
-//                 map->width++;
-//                 token = strtok(NULL, ";");
-//             }
-//         }
-//         map->height++;
-//     }
-
-//     fseek(file, 0, SEEK_SET);
-
-//     map->blocks = malloc(map->height * sizeof(BlockType *));
-//     for (int i = 0; i < map->height; ++i)
-//     {
-//         map->blocks[i] = malloc(map->width * sizeof(BlockType));
-//         fgets(line, sizeof(line), file);
-//         char *token = strtok(line, ",");
-//         for (int j = 0; j < map->width; ++j)
-//         {
-//             switch (token[0])
-//             {
-//             case 'B':
-//                 map->blocks[i][j] = BRICK;
-//                 break;
-//             case 'G':
-//                 map->blocks[i][j] = GROUND;
-//                 break;
-//             case 'C':
-//                 map->blocks[i][j] = COIN;
-//                 break;
-//             case 'E':
-//                 map->blocks[i][j] = ENEMY;
-//                 break;
-//             case 'N':
-//                 map->blocks[i][j] = BLACK;
-//                 break;
-//             default:
-//                 map->blocks[i][j] = EMPTY;
-//                 break;
-//             }
-//             token = strtok(NULL, ",");
-//         }
-//     }
-
-//     fclose(file);
-//     return map;
-// }
 
 
 Map* load_map() {
@@ -792,3 +682,77 @@ void reset_map(Map **map) {
     free_map(*map);
     *map = NULL;
 }
+
+
+// Map *load_map_from_csv(const char *filename)
+// {
+//     FILE *file = fopen(filename, "r");
+//     if (!file)
+//     {
+//         printf("Erreur lors de l'ouverture du fichier pour la lecture: %s\n", filename);
+//         return NULL;
+//     }
+
+//     Map *map = malloc(sizeof(Map));
+//     if (!map)
+//     {
+//         fclose(file);
+//         return NULL;
+//     }
+
+//     map->width = 0;
+//     map->height = 0;
+
+//     char line[1024];
+//     while (fgets(line, sizeof(line), file))
+//     {
+//         if (map->width == 0)
+//         {
+//             char *token = strtok(line, ";");
+//             while (token)
+//             {
+//                 map->width++;
+//                 token = strtok(NULL, ";");
+//             }
+//         }
+//         map->height++;
+//     }
+
+//     fseek(file, 0, SEEK_SET);
+
+//     map->blocks = malloc(map->height * sizeof(BlockType *));
+//     for (int i = 0; i < map->height; ++i)
+//     {
+//         map->blocks[i] = malloc(map->width * sizeof(BlockType));
+//         fgets(line, sizeof(line), file);
+//         char *token = strtok(line, ",");
+//         for (int j = 0; j < map->width; ++j)
+//         {
+//             switch (token[0])
+//             {
+//             case 'B':
+//                 map->blocks[i][j] = BRICK;
+//                 break;
+//             case 'G':
+//                 map->blocks[i][j] = GROUND;
+//                 break;
+//             case 'C':
+//                 map->blocks[i][j] = COIN;
+//                 break;
+//             case 'E':
+//                 map->blocks[i][j] = ENEMY;
+//                 break;
+//             case 'N':
+//                 map->blocks[i][j] = BLACK;
+//                 break;
+//             default:
+//                 map->blocks[i][j] = EMPTY;
+//                 break;
+//             }
+//             token = strtok(NULL, ",");
+//         }
+//     }
+
+//     fclose(file);
+//     return map;
+// }
