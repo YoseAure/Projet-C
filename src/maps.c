@@ -37,6 +37,7 @@ SDL_Texture *store_texture = NULL;
 SDL_Texture *surfshop_texture = NULL;
 SDL_Texture *planche_surfshop_texture = NULL;
 SDL_Texture *win_background = NULL;
+SDL_Texture *pesty_texture = NULL;
 
 TextureInfo texture_info[] = {
     // {{x, y, w (pixel), h (pixel)}, w (largeur de la texture), h (hauteur de la texture)}
@@ -151,6 +152,13 @@ bool load_block_textures(SDL_Renderer *renderer) {
         printf("Error loading ennemy texture: %s\n", SDL_GetError());
         return false;
     }
+
+    pesty_texture = IMG_LoadTexture(renderer, "../assets/sprites/pestyflore.png");
+    if (!pesty_texture) {
+        printf("Error loading pesty texture: %s\n", SDL_GetError());
+        return false;
+    }
+
     // dans blocks pour l'instant mais faudrait peut être le mettre dans un truc mobs
     player_texture = IMG_LoadTexture(renderer, "../assets/sprites/naked-player.png");
     if (!player_texture) {
@@ -215,6 +223,10 @@ void free_block_textures() {
     if (enemy_texture) {
         SDL_DestroyTexture(enemy_texture);
         enemy_texture = NULL;
+    }
+    if (pesty_texture) {
+        SDL_DestroyTexture(pesty_texture);
+        pesty_texture = NULL;
     }
     if (player_texture) {
         SDL_DestroyTexture(player_texture);
@@ -479,6 +491,26 @@ Map* load_map() {
                         mob_count++;
                     }
                     break;
+                case 'e':
+                    map->blocks[row][col].type = PESTY;
+                    map->blocks[row][col].isSolid = false;
+                    if (mob_count < MAX_MOBS) {
+                        mobs[mob_count].x = col * TILE_SIZE;
+                        mobs[mob_count].y = row * TILE_SIZE;
+                        mobs[mob_count].width = TILE_SIZE;
+                        mobs[mob_count].height = TILE_SIZE * 1.5;
+                        mobs[mob_count].type = PESTYFLORE2;
+                        mobs[mob_count].animation_row = 9;
+                        mobs[mob_count].texture = pesty_texture;
+                        mobs[mob_count].direction = 1;
+                        mobs[mob_count].x_speed = 0;
+                        mobs[mob_count].y_speed = 0;
+                        mobs[mob_count].initial_x = col * TILE_SIZE;
+                        mobs[mob_count].initial_y = row * TILE_SIZE;
+                        getSpriteClips(mobs[mob_count].clips, PLAYER_SPRITE_ROWS, PLAYER_SPRITE_COLS, PLAYER_SPRITE_FRAME_WIDTH, PLAYER_SPRITE_FRAME_HEIGHT);
+                        mob_count++;
+                    }
+                    break;
                 case 'D':
                     map->blocks[row][col].type = BLOCK_DRAGON;
                     map->blocks[row][col].isSolid = false;
@@ -616,7 +648,7 @@ Map* load_map() {
                     map->blocks[row][col].width = TILE_SIZE * 1.5;
                     map->blocks[row][col].height = TILE_SIZE * 2.5;
                     map->blocks[row][col].type = PLANCHESURFSHOP;
-                    map->blocks[row][col].isSolid = false;
+                    map->blocks[row][col].isSolid = true;
                     break;
                 default:
                     map->blocks[row][col].type = EMPTY;

@@ -7,6 +7,7 @@ extern SDL_Texture *win_background;
 SDL_Rect player_clips[MAX_SPRITE_ROWS][MAX_SPRITE_COLS];
 SDL_Rect dragon_clips[MAX_SPRITE_ROWS][MAX_SPRITE_COLS];
 SDL_Rect princess_clips[MAX_SPRITE_ROWS][MAX_SPRITE_COLS];
+SDL_Rect pestyflore_clips[MAX_SPRITE_ROWS][MAX_SPRITE_COLS];
 
 Mob mobs[MAX_MOBS];
 int mob_count = 0;
@@ -416,6 +417,14 @@ void animate_mobs(int width, int height, Uint32 currentTime) {
                 case PRINCESS:
                     mobs[i].current_frame = (mobs[i].current_frame + 1) % 1 + 5;
                     break;
+                case PESTYFLORE2:
+                    if (mobs[i].direction == 0) {
+                        mobs[i].animation_row = 11;
+                    } else {
+                        mobs[i].animation_row = 9;
+                    }
+                    mobs[i].current_frame = (mobs[i].current_frame + 1) % 8;
+                    break;
                 default:
                     break;
             }
@@ -456,6 +465,10 @@ void render_mobs(SDL_Renderer *renderer, int cameraX, int cameraY) {
                 // SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Rouge
                 // SDL_RenderFillRect(renderer, &mob_rect);
                 SDL_RenderCopy(renderer, mobs[i].texture, NULL, &mob_rect);
+                break;
+            case PESTYFLORE2:
+                mob_rect = (SDL_Rect){mobs[i].x - cameraX + (mobs[i].width - PLAYER_SPRITE_FRAME_WIDTH) / 2, mobs[i].y - cameraY + (mobs[i].height - PLAYER_SPRITE_FRAME_HEIGHT) - 10, PLAYER_SPRITE_FRAME_WIDTH, PLAYER_SPRITE_FRAME_HEIGHT};
+                SDL_RenderCopy(renderer, mobs[i].texture, &mobs[i].clips[mobs[i].animation_row][mobs[i].current_frame], &mob_rect);
                 break;
             default:
                 break;
@@ -720,6 +733,19 @@ void update_mobs(Uint32 currentTime) {
                         }
                     }
                     break;
+                case PESTYFLORE2:
+                    if (mobs[i].direction == 0) {
+                        mobs[i].x += DRAGON_SPEED / 4;
+                        if (mobs[i].x >= mobs[i].initial_x + 5 * TILE_SIZE) {
+                            mobs[i].direction = 1;
+                        }
+                    } else {
+                        mobs[i].x -= DRAGON_SPEED / 4;
+                        if (mobs[i].x <= mobs[i].initial_x - 5 * TILE_SIZE) {
+                            mobs[i].direction = 0;
+                        }
+                    }
+                    break;
                 default:
                     break;
             }
@@ -846,6 +872,7 @@ void render_inventory(SDL_Renderer *renderer, Inventory *inventory) {
 void reset_game() {
     reset_game_state();
     reset_keys();
+    surfsheet = false;
     player.life_points = 3;
     player.coins_count = 0;
     player_inventory.item_count = 0;
@@ -859,8 +886,16 @@ void reset_game() {
 }
 
 void start_game(SDL_Renderer *renderer) {
+    Mix_HaltMusic();
     play_horn_sound();
     reset_game();
+    Mix_Music *new_music = Mix_LoadMUS("assets/audio/background-music-2.mp3");
+    if (!new_music) {
+        printf("Erreur Mix_LoadMUS: %s\n", Mix_GetError());
+    }
+    else {
+        Mix_PlayMusic(new_music, -1);
+    }
     // const char *klaxon = "assets/audio/klaxon.mp3";
     // play_sound(klaxon);
     current_level = 1;
@@ -915,7 +950,7 @@ void start_game(SDL_Renderer *renderer) {
                     if (speech_index == 2) {
                         if (player.coins_count >= 8) {
                             speech_index = 4;
-                            player.coins_count -= 4;
+                            player.coins_count -= 8;
                             surfboard = true;
                             surfsheet = true;
                         } else if (player.coins_count < 8) {
@@ -1021,6 +1056,7 @@ void start_game(SDL_Renderer *renderer) {
         SDL_Delay(16); // ~60 fps
     }
 
+    Mix_FreeMusic(new_music);
     free_map(map);
     free_block_textures();
 }

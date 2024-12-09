@@ -21,6 +21,7 @@ typedef enum {
     RED_FLAG,
     COIN,
     ENEMY,
+    PESTY,
     BLACK,
     BLOCK_DRAGON,
     BLOCK_PRINCESS,
@@ -49,7 +50,8 @@ typedef enum {
 typedef enum {
     DRAGON,
     PRINCESS,
-    PESTYFLORE
+    PESTYFLORE,
+    PESTYFLORE2
 } MobType;
 
 // Player
