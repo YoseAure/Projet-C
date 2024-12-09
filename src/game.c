@@ -651,7 +651,7 @@ void display_in_game_menu(SDL_Renderer *renderer, Player *player, bool *return_t
             SDL_RenderCopy(renderer, win_background_texture, NULL, NULL);
         }
 
-        SDL_Surface *title_surface = TTF_RenderText_Solid(title_font, player->life_points > 0 ? "Game Paused" : "Game Over" , black);
+        SDL_Surface *title_surface = TTF_RenderText_Solid(title_font, player->life_points > 0 ? "Game Paused" : player->life_points < 0 ? " " : "Game Over" , black);
         SDL_Texture *title_texture = SDL_CreateTextureFromSurface(renderer, title_surface);
 
         int title_width = title_surface->w;
