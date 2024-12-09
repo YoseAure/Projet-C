@@ -4,19 +4,12 @@
 extern bool exit_program;
 extern SDL_Texture *coin_texture;
 extern SDL_Texture *win_background;
-SDL_Rect player_clips[MAX_SPRITE_ROWS][MAX_SPRITE_COLS];
-SDL_Rect dragon_clips[MAX_SPRITE_ROWS][MAX_SPRITE_COLS];
-SDL_Rect princess_clips[MAX_SPRITE_ROWS][MAX_SPRITE_COLS];
-SDL_Rect pestyflore_clips[MAX_SPRITE_ROWS][MAX_SPRITE_COLS];
 
 Mob mobs[MAX_MOBS];
 int mob_count = 0;
 
 int current_frame = 0;
-int current_dragon_frame = 0;
-int current_princess_frame = 0;
 
-int animation_row = 24;
 int previous_mouvement = 24;
 Uint32 last_frame_time = 0;
 const Uint32 FRAME_DELAY = 100;

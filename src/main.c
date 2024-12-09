@@ -14,7 +14,6 @@ extern bool quit_game;
 typedef enum {
     MAIN_MENU,
     IN_GAME,
-    // WIN_GAME,
     EXIT
 } GameState;
 
@@ -43,61 +42,12 @@ int main(int argc, char *argv[]) {
                 start_game(renderer);
                 if (exit_program) {
                     game_state = EXIT;
-                } 
-                // else if (game_won) {
-                //     game_state = WIN_GAME;
-                // } 
-                else if (quit_game) {
+                } else if (quit_game) {
                     game_state = MAIN_MENU;
                 } else {
                     game_state = IN_GAME;
                 }
                 break;
-    //         case WIN_GAME: {
-    //             SDL_Surface *win_surface = SDL_LoadBMP("assets/images/win.png");
-    //             if (!win_surface) {
-    //                 printf("Erreur de chargement de l'image: %s\n", SDL_GetError());
-    //                 game_state = MAIN_MENU;
-    //                 break;
-    //             }
-
-    //             SDL_Texture *win_texture = SDL_CreateTextureFromSurface(renderer, win_surface);
-    //             SDL_FreeSurface(win_surface);
-    //             if (!win_texture) {
-    //                 printf("Erreur de création de la texture: %s\n", SDL_GetError());
-    //                 game_state = MAIN_MENU;
-    //                 break;
-    //             }
-
-    //             bool stay_in_win = true;
-    //             while (stay_in_win) {
-    //                 SDL_RenderClear(renderer);
-
-    //                 SDL_RenderCopy(renderer, win_texture, NULL, NULL);
-
-    //                 SDL_RenderPresent(renderer);
-
-    //                 SDL_Event event;
-    //                 while (SDL_PollEvent(&event)) {
-    //                     if (event.type == SDL_QUIT)
-    //                     {
-    //                         exit_program = true;
-    //                         stay_in_win = false;
-    //                         game_state = EXIT;
-    //                     }
-    //                     else if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_RETURN)
-    //                     {
-    //                         stay_in_win = false;
-    //                         game_state = MAIN_MENU;
-    //                     }
-    //                 }
-    //                 SDL_Delay(16); // ~60 FPS
-    //             }
-
-    //             SDL_DestroyTexture(win_texture);
-    //             break;
-    //         }
-
             default:
                 game_state = EXIT;
                 break;

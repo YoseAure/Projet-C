@@ -3,7 +3,6 @@
 #include <stdlib.h>
 
 extern Player player;
-extern SDL_Rect dragon_clips[MAX_SPRITE_ROWS][MAX_SPRITE_COLS];
 
 extern Mob mobs[MAX_MOBS];
 extern int mob_count;
