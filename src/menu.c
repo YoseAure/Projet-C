@@ -151,14 +151,6 @@ void display_main_menu(SDL_Renderer *renderer) {
     SDL_Texture *logo_texture = SDL_CreateTextureFromSurface(renderer, logo_surface);
     SDL_FreeSurface(logo_surface);
 
-    Mix_HaltMusic();
-    Mix_Music *new_music = Mix_LoadMUS("assets/audio/background-music-2.mp3");
-    if (!new_music) {
-        printf("Erreur Mix_LoadMUS: %s\n", Mix_GetError());
-    } else {
-        Mix_PlayMusic(new_music, -1);
-    }
-
     int final_van_x = 0;
     int final_van_y = 0;
 
