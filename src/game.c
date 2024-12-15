@@ -745,7 +745,7 @@ void update_mobs(Map *map, int width, int height, Uint32 currentTime) {
                     case PESTYFLORE:
                     case PESTYFLORE2:
                         if (mario_gameType) {
-                            mobs[i].y_speed += GRAVITY;
+                            mobs[i].y_speed += GRAVITY * 4;
                             mobs[i].y += mobs[i].y_speed;
                             for (int j = 0; j < height; ++j) {
                                 for (int k = 0; k < width; ++k) {

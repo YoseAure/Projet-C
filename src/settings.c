@@ -15,7 +15,11 @@ void settings(SDL_Renderer *renderer) {
     SDL_Color white = {255, 255, 255, 255};
     SDL_Color yellow = {255, 255, 0, 255};
 
-    const char *options[] = {"turn music off", "turn sound effects", "back to main menu"};
+    const char *options[] = {
+        music_enabled ? "turn music off" : "turn music on",
+        sound_effects_enabled ? "turn sound effects off" : "turn sound effects on",
+        "go back"
+    };
     int selected = 0;
     bool quit = false;
     SDL_Event event;
@@ -48,6 +52,7 @@ void settings(SDL_Renderer *renderer) {
                     case SDLK_RETURN:
                         if (selected == 0) {
                             music_enabled = !music_enabled;
+                            options[0] = music_enabled ? "turn music off" : "turn music on";
                             if (!music_enabled) {
                                 pauseOrResumeMusic();
                             } else {
@@ -55,9 +60,11 @@ void settings(SDL_Renderer *renderer) {
                             }
                         } else if (selected == 1) {
                             sound_effects_enabled = !sound_effects_enabled;
+                            options[1] = sound_effects_enabled ? "turn sound effects off" : "turn sound effects on";
                         } else if (selected == 2) {
                             quit = true;
-                        } break;
+                        }
+                        break;
                     case SDLK_ESCAPE:
                         quit = true;
                         break;
