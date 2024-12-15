@@ -3,9 +3,6 @@
 
 extern bool exit_program;
 
-bool music_enabled = true;
-bool sound_effects_enabled = true;
-
 void settings(SDL_Renderer *renderer) {
     TTF_Font *font = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 32);
     TTF_Font *font_large = TTF_OpenFont("assets/fonts/mario-font-pleine.ttf", 36);
@@ -34,13 +31,6 @@ void settings(SDL_Renderer *renderer) {
     SDL_Texture *logo_texture = SDL_CreateTextureFromSurface(renderer, logo_surface);
     SDL_FreeSurface(logo_surface);
 
-    Mix_Chunk *menu_selection_sound = Mix_LoadWAV("assets/audio/menu-selection.mp3");
-    if (!menu_selection_sound) {
-        printf("Erreur Mix_LoadWAV: %s\n", Mix_GetError());
-        exit_program = true;
-        quit = true;
-    }
-
     while (!quit) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
@@ -49,24 +39,19 @@ void settings(SDL_Renderer *renderer) {
                 switch (event.key.keysym.sym) {
                     case SDLK_UP:
                         selected = (selected - 1 + 3) % 3;
-                        if (sound_effects_enabled) {
-                            Mix_PlayChannel(-1, menu_selection_sound, 0);
-                        }
+                        playSoundEffect(MENU_SELECTION_SOUND);
                         break;
                     case SDLK_DOWN:
                         selected = (selected + 1) % 3;
-                        if (sound_effects_enabled) {
-                            Mix_PlayChannel(-1, menu_selection_sound, 0);
-                        }
+                        playSoundEffect(MENU_SELECTION_SOUND);
                         break;
                     case SDLK_RETURN:
                         if (selected == 0) {
                             music_enabled = !music_enabled;
                             if (!music_enabled) {
-                                Mix_HaltMusic();
+                                pauseOrResumeMusic();
                             } else {
-                                // Pour rejouer la musique si elle est reactivée
-                                Mix_PlayMusic(Mix_LoadMUS("assets/audio/background-music-2.mp3"), -1);
+                                playMusic(BACKGROUND_MUSIC_2);
                             }
                         } else if (selected == 1) {
                             sound_effects_enabled = !sound_effects_enabled;
@@ -110,7 +95,6 @@ void settings(SDL_Renderer *renderer) {
         SDL_RenderPresent(renderer);
     }
 
-    Mix_FreeChunk(menu_selection_sound);
     SDL_DestroyTexture(logo_texture);
     TTF_CloseFont(font);
     TTF_CloseFont(font_large);

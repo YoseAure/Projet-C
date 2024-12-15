@@ -176,12 +176,6 @@ void display_main_menu(SDL_Renderer *renderer) {
     Uint32 start_time = SDL_GetTicks();
     int blink_interval = 1500;
 
-    Mix_Chunk *menu_selection_sound = Mix_LoadWAV("assets/audio/pop-sound.mp3");
-    if (!menu_selection_sound) {
-        printf("Erreur Mix_LoadWAV: %s\n", Mix_GetError());
-        exit_program = true;
-        quit = true;
-    }
 
     while (!quit && !exit_program) {
         while (SDL_PollEvent(&event)) {
@@ -193,12 +187,12 @@ void display_main_menu(SDL_Renderer *renderer) {
                     case SDLK_UP:
                         selected = (selected - 1 + 3) % 3;
                         if (sound_effects_enabled) {
-                            Mix_PlayChannel(-1, menu_selection_sound, 0);
+                            playSoundEffect(MENU_SELECTION_SOUND);
                         } break;
                     case SDLK_DOWN:
                         selected = (selected + 1) % 3;
                         if (sound_effects_enabled) {
-                            Mix_PlayChannel(-1, menu_selection_sound, 0);
+                            playSoundEffect(MENU_SELECTION_SOUND);
                         } break;
                     case SDLK_RETURN:
                         if (selected == 0) {
@@ -296,7 +290,6 @@ void display_main_menu(SDL_Renderer *renderer) {
         SDL_RenderPresent(renderer);
     }
 
-    Mix_FreeChunk(menu_selection_sound);
     SDL_DestroyTexture(van_texture);
     SDL_DestroyTexture(logo_texture);
     TTF_CloseFont(font);

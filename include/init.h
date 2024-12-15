@@ -6,7 +6,8 @@
 #include <SDL2/SDL_mixer.h>
 #include <stdbool.h>
 #include "constants.h"
+#include "sounds.h"
 
-bool init_sdl(SDL_Window **window, SDL_Renderer **renderer, Mix_Music **background_music);
+bool init_sdl(SDL_Window **window, SDL_Renderer **renderer);
 
 #endif // INIT_H

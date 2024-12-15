@@ -64,6 +64,15 @@ bool checkCollision(Player *player, SDL_Rect *obs) {
     return false;
 }
 
+bool checkMobCollision(Mob *mob, SDL_Rect *obs) {
+    if (mob->x + mob->width > obs->x && mob->x < obs->x + obs->w) {
+        if (mob->y + mob->height > obs->y && mob->y < obs->y + obs->h) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void handle_input(SDL_Event *e) {
     if (e->type == SDL_KEYDOWN) {
         keys[e->key.keysym.scancode] = true;
@@ -222,13 +231,12 @@ void update_player(SDL_Renderer *renderer, Map *map, int width, int height, Uint
                     if (currentTime - player.lastHit_t >= 1000) {
                         player.lastHit_t = currentTime;
                         player.life_points--;
-                        play_life_loss_sound();
-                        // play_sound("assets/audio/hp-loss.mp3");
+                        playSoundEffect(DAMAGE_SOUND);
                     }
                 } else if (map->blocks[i][j].type == COIN && checkCollision(&player, &obs)) {
                     player.coins_count++;
                     map->blocks[i][j].type = EMPTY;
-                    play_pop_sound();
+                    playSoundEffect(POP_SOUND);
                 }
             }
         }
@@ -248,8 +256,7 @@ void update_player(SDL_Renderer *renderer, Map *map, int width, int height, Uint
                 if (currentTime - player.lastHit_t >= 1000) {
                     player.lastHit_t = currentTime;
                     player.life_points--;
-                    play_life_loss_sound();
-                    // play_sound("assets/audio/hp-loss.mp3");
+                    playSoundEffect(DAMAGE_SOUND);
                 }
             }
         }
@@ -263,21 +270,9 @@ void update_player(SDL_Renderer *renderer, Map *map, int width, int height, Uint
                     case NEXT_MAP:
                         current_map++;
                         if (current_map == 2) {
-                            Mix_HaltMusic();
-                            Mix_Music *new_music = Mix_LoadMUS("assets/audio/surfshop.mp3");
-                            if (!new_music) {
-                                printf("Erreur Mix_LoadMUS: %s\n", Mix_GetError());
-                            } else {
-                                Mix_PlayMusic(new_music, -1);
-                            }
+                            changeMusic(SURFSHOP_MUSIC);
                         } else {
-                            Mix_HaltMusic();
-                            Mix_Music *new_music = Mix_LoadMUS("assets/audio/background-music-2.mp3");
-                            if (!new_music) {
-                                printf("Erreur Mix_LoadMUS: %s\n", Mix_GetError());
-                            } else {
-                                Mix_PlayMusic(new_music, -1);
-                            }
+                            changeMusic(BACKGROUND_MUSIC_2);
                         }
                         new_map = true;
                         if (current_map > 0 && current_map < 5) {
@@ -460,7 +455,9 @@ void render_mobs(SDL_Renderer *renderer, int cameraX, int cameraY) {
                 SDL_RenderCopy(renderer, mobs[i].texture, NULL, &mob_rect);
                 break;
             case PESTYFLORE2:
-                mob_rect = (SDL_Rect){mobs[i].x - cameraX + (mobs[i].width - PLAYER_SPRITE_FRAME_WIDTH) / 2, mobs[i].y - cameraY + (mobs[i].height - PLAYER_SPRITE_FRAME_HEIGHT) - 10, PLAYER_SPRITE_FRAME_WIDTH, PLAYER_SPRITE_FRAME_HEIGHT};
+                mob_rect = (SDL_Rect){mobs[i].x - cameraX + (mobs[i].width - PLAYER_SPRITE_FRAME_WIDTH) / 2, mobs[i].y - cameraY + (mobs[i].height - PLAYER_SPRITE_FRAME_HEIGHT) + 2, PLAYER_SPRITE_FRAME_WIDTH, PLAYER_SPRITE_FRAME_HEIGHT};
+                // SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Rouge
+                // SDL_RenderFillRect(renderer, &mob_rect);
                 SDL_RenderCopy(renderer, mobs[i].texture, &mobs[i].clips[mobs[i].animation_row][mobs[i].current_frame], &mob_rect);
                 break;
             default:
@@ -577,13 +574,6 @@ void display_in_game_menu(SDL_Renderer *renderer, Player *player, bool *return_t
     SDL_Texture *logo_texture = SDL_CreateTextureFromSurface(renderer, logo_surface);
     SDL_FreeSurface(logo_surface);
 
-    Mix_Chunk *menu_selection_sound = Mix_LoadWAV("assets/audio/menu-selection.mp3");
-    if (!menu_selection_sound) {
-        printf("Erreur Mix_LoadWAV: %s\n", Mix_GetError());
-        exit_program = true;
-        quit = true;
-    }
-
     SDL_Texture *win_background_texture = load_texture("assets/images/win.png", renderer);
     if (!win_background_texture) {
         printf("Erreur lors du chargement de l'image de fond\n");
@@ -606,13 +596,13 @@ void display_in_game_menu(SDL_Renderer *renderer, Player *player, bool *return_t
                     case SDLK_UP:
                         selected = (selected - 1 + 3) % 3;
                         if (sound_effects_enabled) {
-                            Mix_PlayChannel(-1, menu_selection_sound, 0);
+                            playSoundEffect(MENU_SELECTION_SOUND);
                         }
                         break;
                     case SDLK_DOWN:
                         selected = (selected + 1) % 3;
                         if (sound_effects_enabled) {
-                            Mix_PlayChannel(-1, menu_selection_sound, 0);
+                            playSoundEffect(MENU_SELECTION_SOUND);
                         }
                         break;
                     case SDLK_RETURN:
@@ -699,7 +689,6 @@ void display_in_game_menu(SDL_Renderer *renderer, Player *player, bool *return_t
     }
 
     // Nettoyage
-    Mix_FreeChunk(menu_selection_sound);
     SDL_DestroyTexture(logo_texture);
     SDL_DestroyTexture(background_texture);
     SDL_DestroyTexture(win_background_texture);
@@ -708,39 +697,90 @@ void display_in_game_menu(SDL_Renderer *renderer, Player *player, bool *return_t
     TTF_CloseFont(title_font);
 }
 
-void update_mobs(Uint32 currentTime) {
+void update_mobs(Map *map, int width, int height, Uint32 currentTime) {
     static Uint32 last_mob_update_time = 0;
     if (currentTime - last_mob_update_time >= FRAME_DELAY) {
         for (int i = 0; i < mob_count; i++) {
-            switch (mobs[i].type) {
-                case DRAGON:
-                    if (mobs[i].direction == 0) {
-                        mobs[i].x += DRAGON_SPEED;
-                        if (mobs[i].x >= mobs[i].initial_x + 20 * TILE_SIZE) {
-                            mobs[i].direction = 1;
-                        }
-                    } else {
-                        mobs[i].x -= DRAGON_SPEED;
-                        if (mobs[i].x <= mobs[i].initial_x - 20 * TILE_SIZE) {
-                            mobs[i].direction = 0;
-                        }
-                    }
-                    break;
-                case PESTYFLORE2:
-                    if (mobs[i].direction == 0) {
-                        mobs[i].x += DRAGON_SPEED / 4;
-                        if (mobs[i].x >= mobs[i].initial_x + 5 * TILE_SIZE) {
-                            mobs[i].direction = 1;
-                        }
-                    } else {
-                        mobs[i].x -= DRAGON_SPEED / 4;
-                        if (mobs[i].x <= mobs[i].initial_x - 5 * TILE_SIZE) {
-                            mobs[i].direction = 0;
+            bool canMove = true;
+            for (int j = 0; j < height; ++j) {
+                for (int k = 0; k < width; ++k) {
+                    if (map->blocks[j][k].isSolid) {
+                        SDL_Rect block_rect = { map->blocks[j][k].x, map->blocks[j][k].y, map->blocks[j][k].width, map->blocks[j][k].height };
+                        if (mobs[i].direction == 0) {
+                            if (mobs[i].x + mobs[i].width + mobs[i].x_speed > block_rect.x && 
+                                mobs[i].x + mobs[i].x_speed < block_rect.x + block_rect.w &&
+                                mobs[i].y + mobs[i].height > block_rect.y && 
+                                mobs[i].y < block_rect.y + block_rect.h) {
+                                canMove = false;
+                                break;
+                            }
+                        } else if (mobs[i].direction == 1) {
+                            if (mobs[i].x - mobs[i].x_speed < block_rect.x + block_rect.w && 
+                                mobs[i].x > block_rect.x &&
+                                mobs[i].y + mobs[i].height > block_rect.y && 
+                                mobs[i].y < block_rect.y + block_rect.h) {
+                                canMove = false;
+                                break;
+                            }
                         }
                     }
-                    break;
-                default:
-                    break;
+                }
+                if (!canMove) break;
+            }
+            if (canMove) {
+                switch (mobs[i].type) {
+                    case DRAGON:
+                        if (mobs[i].direction == 0) {
+                            mobs[i].x += mobs[i].x_speed;
+                            if (mobs[i].x >= mobs[i].initial_x + 20 * TILE_SIZE) {
+                                mobs[i].direction = 1;
+                            }
+                        } else {
+                            mobs[i].x -= mobs[i].x_speed;
+                            if (mobs[i].x <= mobs[i].initial_x - 20 * TILE_SIZE) {
+                                mobs[i].direction = 0;
+                            }
+                        }
+                        break;
+                    case PESTYFLORE:
+                    case PESTYFLORE2:
+                        if (mario_gameType) {
+                            mobs[i].y_speed += GRAVITY;
+                            mobs[i].y += mobs[i].y_speed;
+                            for (int j = 0; j < height; ++j) {
+                                for (int k = 0; k < width; ++k) {
+                                    if (map->blocks[j][k].isSolid) {
+                                        SDL_Rect block_rect = { map->blocks[j][k].x, map->blocks[j][k].y, map->blocks[j][k].width, map->blocks[j][k].height };
+                                        if (checkMobCollision(&mobs[i], &block_rect)) {
+                                            if (mobs[i].y_speed > 0) {
+                                                mobs[i].y = block_rect.y - mobs[i].height;
+                                                mobs[i].y_speed = 0;
+                                            } else if (mobs[i].y_speed < 0) {
+                                                mobs[i].y = block_rect.y + block_rect.h;
+                                                mobs[i].y_speed = 0;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (mobs[i].direction == 0) {
+                            mobs[i].x += mobs[i].x_speed;
+                            if (mobs[i].x >= mobs[i].initial_x + 5 * TILE_SIZE) {
+                                mobs[i].direction = 1;
+                            }
+                        } else {
+                            mobs[i].x -= mobs[i].x_speed;
+                            if (mobs[i].x <= mobs[i].initial_x - 5 * TILE_SIZE) {
+                                mobs[i].direction = 0;
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            } else {
+                mobs[i].direction = !mobs[i].direction;
             }
         }
         last_mob_update_time = currentTime;
@@ -880,19 +920,9 @@ void reset_game() {
 
 void start_game(SDL_Renderer *renderer) {
     Mix_HaltMusic();
-    play_horn_sound();
+    playSoundEffect(KLAXON_SOUND);
+    playMusic(BACKGROUND_MUSIC_2);
     reset_game();
-    Mix_Music *new_music = Mix_LoadMUS("assets/audio/background-music-2.mp3");
-    if (!new_music) {
-        printf("Erreur Mix_LoadMUS: %s\n", Mix_GetError());
-    }
-    else {
-        Mix_PlayMusic(new_music, -1);
-    }
-    // const char *klaxon = "assets/audio/klaxon.mp3";
-    // play_sound(klaxon);
-    current_level = 1;
-    current_map = 0;
     bool return_to_main_menu = false;
     bool in_game_menu = false;
     bool resume_game = false;
@@ -981,7 +1011,7 @@ void start_game(SDL_Renderer *renderer) {
 
                 dim(renderer);
             }
-            update_mobs(currentTime);
+            update_mobs(map, map->width, map->height, currentTime);
             animate_mobs(map->width, map->height, currentTime);
             update_player(renderer, map, map->width, map->height, currentTime);
 
@@ -1029,12 +1059,11 @@ void start_game(SDL_Renderer *renderer) {
                     }
                 }
             } else if (player.life_points < 0) {
-                play_win_sound();
+                playSoundEffect(WIN_SOUND);
                 display_in_game_menu(renderer, &player, &return_to_main_menu, &resume_game);
             } else {
                 player_inventory.item_count = 0;
-                play_loss_sound();
-                // play_sound("assets/audio/game-over.mp3");
+                playSoundEffect(GAME_OVER_SOUND);
                 display_in_game_menu(renderer, &player, &return_to_main_menu, &resume_game);
             }
         } else {
@@ -1049,7 +1078,6 @@ void start_game(SDL_Renderer *renderer) {
         SDL_Delay(16); // ~60 fps
     }
 
-    Mix_FreeMusic(new_music);
     free_map(map);
     free_block_textures();
 }

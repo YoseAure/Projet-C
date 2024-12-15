@@ -1,8 +1,6 @@
 #include "../include/init.h"
 
-extern bool music_enabled;
-
-bool init_sdl(SDL_Window **window, SDL_Renderer **renderer, Mix_Music **background_music) {
+bool init_sdl(SDL_Window **window, SDL_Renderer **renderer) {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
         printf("Erreur SDL_Init: %s\n", SDL_GetError());
         return false;
@@ -21,23 +19,9 @@ bool init_sdl(SDL_Window **window, SDL_Renderer **renderer, Mix_Music **backgrou
         return false;
     }
 
-    *background_music = Mix_LoadMUS("assets/audio/background-music-2.mp3");
-    if (!*background_music) {
-        printf("Erreur Mix_LoadMUS: %s\n", Mix_GetError());
-        Mix_CloseAudio();
-        TTF_Quit();
-        SDL_Quit();
-        return false;
-    }
-
-    if (music_enabled) {
-        Mix_PlayMusic(*background_music, -1);
-    }
-
     SDL_DisplayMode display_mode;
     if (SDL_GetCurrentDisplayMode(0, &display_mode) != 0) {
         printf("Erreur SDL_GetCurrentDisplayMode: %s\n", SDL_GetError());
-        Mix_FreeMusic(*background_music);
         Mix_CloseAudio();
         TTF_Quit();
         SDL_Quit();
@@ -57,7 +41,6 @@ bool init_sdl(SDL_Window **window, SDL_Renderer **renderer, Mix_Music **backgrou
     *window = SDL_CreateWindow("Les aventures de Pestyflore", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
     if (!*window) {
         printf("Erreur SDL_CreateWindow: %s\n", SDL_GetError());
-        Mix_FreeMusic(*background_music);
         Mix_CloseAudio();
         TTF_Quit();
         SDL_Quit();
@@ -68,12 +51,13 @@ bool init_sdl(SDL_Window **window, SDL_Renderer **renderer, Mix_Music **backgrou
     if (!*renderer) {
         printf("Erreur SDL_CreateRenderer: %s\n", SDL_GetError());
         SDL_DestroyWindow(*window);
-        Mix_FreeMusic(*background_music);
         Mix_CloseAudio();
         TTF_Quit();
         SDL_Quit();
         return false;
     }
+
+    loadAudioAssets();
 
     return true;
 }

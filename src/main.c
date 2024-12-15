@@ -7,6 +7,7 @@
 #include "../include/init.h"
 #include "../include/cleanup.h"
 #include "../include/tools.h"
+#include "../include/sounds.h"
 
 bool exit_program = false;
 extern bool quit_game;
@@ -20,11 +21,12 @@ typedef enum {
 int main(int argc, char *argv[]) {
     SDL_Window *window = NULL;
     SDL_Renderer *renderer = NULL;
-    Mix_Music *background_music = NULL;
 
-    if (!init_sdl(&window, &renderer, &background_music)) {
+    if (!init_sdl(&window, &renderer)) {
         return 1;
     }
+
+    playMusic(BACKGROUND_MUSIC_2);
 
     GameState game_state = MAIN_MENU;
 
@@ -54,7 +56,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    cleanup_sdl(window, renderer, background_music);
+    cleanup_sdl(window, renderer);
 
     return 0;
 }

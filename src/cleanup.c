@@ -1,8 +1,8 @@
 #include "../include/cleanup.h"
 
-void cleanup_sdl(SDL_Window *window, SDL_Renderer *renderer, Mix_Music *background_music) {
+void cleanup_sdl(SDL_Window *window, SDL_Renderer *renderer) {
     Mix_HaltMusic();
-    Mix_FreeMusic(background_music);
+    freeAudioAssets();
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     Mix_CloseAudio();

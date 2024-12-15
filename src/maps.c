@@ -387,14 +387,14 @@ Map* load_map() {
                     map->blocks[row][col].isSolid = false;
                     if (mob_count < MAX_MOBS) {
                         mobs[mob_count].x = col * TILE_SIZE;
-                        mobs[mob_count].y = row * TILE_SIZE;
+                        mobs[mob_count].y = row * TILE_SIZE - TILE_SIZE / 2;
                         mobs[mob_count].width = TILE_SIZE;
                         mobs[mob_count].height = TILE_SIZE * 1.5;
                         mobs[mob_count].type = PESTYFLORE2;
                         mobs[mob_count].animation_row = 9;
                         mobs[mob_count].texture = pesty_texture;
                         mobs[mob_count].direction = 1;
-                        mobs[mob_count].x_speed = 0;
+                        mobs[mob_count].x_speed = DRAGON_SPEED / 4;
                         mobs[mob_count].y_speed = 0;
                         mobs[mob_count].initial_x = col * TILE_SIZE;
                         mobs[mob_count].initial_y = row * TILE_SIZE;
@@ -414,7 +414,7 @@ Map* load_map() {
                         mobs[mob_count].animation_row = 0;
                         mobs[mob_count].texture = dragon_texture;
                         mobs[mob_count].direction = 1;
-                        mobs[mob_count].x_speed = 0;
+                        mobs[mob_count].x_speed = DRAGON_SPEED;
                         mobs[mob_count].y_speed = 0;
                         mobs[mob_count].initial_x = col * TILE_SIZE;
                         mobs[mob_count].initial_y = row * TILE_SIZE;
