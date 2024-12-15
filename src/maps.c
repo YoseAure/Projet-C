@@ -16,7 +16,6 @@ extern bool new_map;
 extern bool surfsheet;
 extern SDL_Texture *surfer;
 
-
 bool load_tileset(SDL_Renderer *renderer, const char *path, SDL_Texture **tileset, SDL_Rect **clips, int tile_width, int tile_height) {
     SDL_Surface *tileset_surface = IMG_Load(path);
     if (!tileset_surface) {
@@ -45,6 +44,7 @@ bool load_tileset(SDL_Renderer *renderer, const char *path, SDL_Texture **tilese
     return true;
 }
 
+// on pourrait faire un tableau de textures...
 bool load_block_textures(SDL_Renderer *renderer) {
     ground_texture = IMG_LoadTexture(renderer, "../assets/images/ground-2.png");
     if (!ground_texture) {

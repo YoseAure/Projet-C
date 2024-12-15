@@ -18,10 +18,10 @@ bool mario_gameType = true;
 bool pokemon_gameType = false;
 
 Player player;
+Inventory player_inventory = { .item_count = 0 };
 
 bool keys[SDL_NUM_SCANCODES] = {false};
 
-Inventory player_inventory = { .item_count = 0 };
 
 bool quit_game = false;
 bool show_inventory = false;
